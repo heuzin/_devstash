@@ -17,3 +17,5 @@
 ## History
 
 <!-- Keep this updated. Earliest to latest -->
+
+- Initial setup of Next.js (Create Next App scaffold with TypeScript, Tailwind CSS v4, and ESLint)
