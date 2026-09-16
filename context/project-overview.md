@@ -524,6 +524,13 @@ The yearly plan works out to $6/mo, a 25% discount.
 - Subtle borders and shadows
 - Syntax highlighting for code blocks
 
+### Screenshots
+
+Refer to the screenshots below as a base for the dashboard UI. It does not have to be exact. Use it as a reference:
+
+- @context/screenshots/dashboard-ui-main.png
+- @context/screenshots/dashboard-ui-drawer.png
+
 ### Layout
 
 ```
