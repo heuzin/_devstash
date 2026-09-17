@@ -1,28 +1,8 @@
-import {
-  Code,
-  FileIcon,
-  ImageIcon,
-  Link as LinkIcon,
-  Settings,
-  Sparkles,
-  Star,
-  StickyNote,
-  Terminal,
-  type LucideIcon,
-} from "lucide-react";
+import { Settings, Star } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
 import { CURRENT_USER, COLLECTIONS, ITEM_TYPES, ITEMS } from "@/lib/mock-data";
-
-const TYPE_ICONS: Record<string, LucideIcon> = {
-  Code,
-  Sparkles,
-  Terminal,
-  StickyNote,
-  File: FileIcon,
-  Image: ImageIcon,
-  Link: LinkIcon,
-};
 
 const favoriteCollections = COLLECTIONS.filter((collection) => collection.isFavorite);
 const recentCollections = COLLECTIONS.filter((collection) => !collection.isFavorite).sort(
@@ -37,12 +17,12 @@ export function Sidebar() {
 
   return (
     <div className="flex h-full flex-col">
-      <nav className="flex-1 overflow-y-auto p-4">
+      <nav className="flex-1 overflow-y-auto p-4 pb-20">
         <div>
           <h3 className="px-2 text-xs font-medium text-muted-foreground">Types</h3>
           <ul className="mt-2 space-y-1">
             {ITEM_TYPES.map((type) => {
-              const Icon = TYPE_ICONS[type.icon];
+              const Icon = ITEM_TYPE_ICONS[type.icon];
               const count = ITEMS.filter((item) => item.itemTypeId === type.id).length;
               return (
                 <li key={type.id}>
@@ -100,7 +80,7 @@ export function Sidebar() {
         </div>
       </nav>
 
-      <div className="flex items-center gap-2 border-t border-border p-4">
+      <div className="fixed inset-x-0 bottom-0 z-10 flex w-64 items-center gap-2 border-t border-border bg-background p-4">
         <Avatar className="size-8">
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
