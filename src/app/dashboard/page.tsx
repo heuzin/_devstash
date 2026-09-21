@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CollectionsGrid } from "@/components/dashboard/collections-grid";
 import { ItemList } from "@/components/dashboard/item-list";
 import { StatsCards } from "@/components/dashboard/stats-cards";
+import { getRecentCollections } from "@/lib/db/collections";
 import { ITEMS } from "@/lib/mock-data";
 
 const pinnedItems = ITEMS.filter((item) => item.isPinned).sort(
@@ -12,7 +13,9 @@ const recentItems = [...ITEMS]
   .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
   .slice(0, 10);
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const collections = await getRecentCollections();
+
   return (
     <div className="space-y-8">
       <div>
@@ -29,7 +32,7 @@ export default function DashboardPage() {
             View all
           </Link>
         </div>
-        <CollectionsGrid />
+        <CollectionsGrid collections={collections} />
       </section>
 
       {pinnedItems.length > 0 && (
