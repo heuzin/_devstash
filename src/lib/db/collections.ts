@@ -1,7 +1,5 @@
 import { prisma } from "@/lib/prisma";
-
-// TODO: replace with the authenticated user's id once Auth.js is wired up.
-const DEMO_USER_EMAIL = "demo@devstash.io";
+import { getCurrentUserId } from "@/lib/db/user";
 
 export interface CollectionTypeSummary {
   itemTypeId: string;
@@ -22,11 +20,11 @@ export interface CollectionSummary {
 }
 
 export async function getRecentCollections(limit = 6): Promise<CollectionSummary[]> {
-  const user = await prisma.user.findUnique({ where: { email: DEMO_USER_EMAIL } });
-  if (!user) return [];
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
 
   const collections = await prisma.collection.findMany({
-    where: { userId: user.id },
+    where: { userId },
     orderBy: { updatedAt: "desc" },
     take: limit,
     include: {
@@ -65,4 +63,21 @@ export async function getRecentCollections(limit = 6): Promise<CollectionSummary
       updatedAt: collection.updatedAt,
     };
   });
+}
+
+export interface CollectionStats {
+  total: number;
+  favorites: number;
+}
+
+export async function getCollectionStats(): Promise<CollectionStats> {
+  const userId = await getCurrentUserId();
+  if (!userId) return { total: 0, favorites: 0 };
+
+  const [total, favorites] = await Promise.all([
+    prisma.collection.count({ where: { userId } }),
+    prisma.collection.count({ where: { userId, isFavorite: true } }),
+  ]);
+
+  return { total, favorites };
 }
