@@ -82,3 +82,40 @@ export async function getItemStats(): Promise<ItemStats> {
 
   return { total, favorites };
 }
+
+export interface ItemTypeSummary {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  color: string;
+  count: number;
+}
+
+// ItemType has no timestamp to order by; mirrors the display order from
+// prisma/seed.ts (SYSTEM_ITEM_TYPES).
+const SYSTEM_TYPE_ORDER = ["snippet", "prompt", "command", "note", "file", "image", "link"];
+
+export async function getItemTypesWithCounts(): Promise<ItemTypeSummary[]> {
+  const userId = await getCurrentUserId();
+
+  const itemTypes = await prisma.itemType.findMany({
+    where: { isSystem: true },
+    include: {
+      _count: { select: { items: { where: { userId: userId ?? "" } } } },
+    },
+  });
+
+  const sorted = [...itemTypes].sort(
+    (a, b) => SYSTEM_TYPE_ORDER.indexOf(a.name) - SYSTEM_TYPE_ORDER.indexOf(b.name),
+  );
+
+  return sorted.map((type) => ({
+    id: type.id,
+    name: type.name,
+    slug: type.slug,
+    icon: type.icon,
+    color: type.color,
+    count: type._count.items,
+  }));
+}
