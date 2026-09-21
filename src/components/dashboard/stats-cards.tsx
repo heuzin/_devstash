@@ -1,31 +1,18 @@
 import { Folder, Package, Star } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { COLLECTIONS, ITEMS } from "@/lib/mock-data";
+import { getCollectionStats } from "@/lib/db/collections";
+import { getItemStats } from "@/lib/db/items";
 
-const stats = [
-  {
-    label: "Items",
-    value: ITEMS.length,
-    icon: Package,
-  },
-  {
-    label: "Collections",
-    value: COLLECTIONS.length,
-    icon: Folder,
-  },
-  {
-    label: "Favorite Items",
-    value: ITEMS.filter((item) => item.isFavorite).length,
-    icon: Star,
-  },
-  {
-    label: "Favorite Collections",
-    value: COLLECTIONS.filter((collection) => collection.isFavorite).length,
-    icon: Star,
-  },
-];
+export async function StatsCards() {
+  const [itemStats, collectionStats] = await Promise.all([getItemStats(), getCollectionStats()]);
 
-export function StatsCards() {
+  const stats = [
+    { label: "Items", value: itemStats.total, icon: Package },
+    { label: "Collections", value: collectionStats.total, icon: Folder },
+    { label: "Favorite Items", value: itemStats.favorites, icon: Star },
+    { label: "Favorite Collections", value: collectionStats.favorites, icon: Star },
+  ];
+
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       {stats.map((stat) => (

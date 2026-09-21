@@ -3,18 +3,13 @@ import { CollectionsGrid } from "@/components/dashboard/collections-grid";
 import { ItemList } from "@/components/dashboard/item-list";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { getRecentCollections } from "@/lib/db/collections";
-import { ITEMS } from "@/lib/mock-data";
-
-const pinnedItems = ITEMS.filter((item) => item.isPinned).sort(
-  (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
-);
-
-const recentItems = [...ITEMS]
-  .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-  .slice(0, 10);
+import { getDashboardItems } from "@/lib/db/items";
 
 export default async function DashboardPage() {
-  const collections = await getRecentCollections();
+  const [collections, { pinned: pinnedItems, recent: recentItems }] = await Promise.all([
+    getRecentCollections(),
+    getDashboardItems(),
+  ]);
 
   return (
     <div className="space-y-8">
