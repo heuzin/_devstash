@@ -1,20 +1,18 @@
-# Current Feature: Add Pro Badge to Sidebar
+# Current Feature
 
 <!-- Feature name and short description -->
 
 ## Status
 
-In Progress
+<!-- Not Started | In Progress | Completed -->
 
 ## Goals
 
-- Add a "PRO" badge to the Files and Images item type entries in the sidebar
+<!-- Goals and requirements -->
 
 ## Notes
 
-- Use the ShadCN UI Badge component
-- Badge should be clean and subtle in style
-- Badge text must be uppercase ("PRO")
+<!-- Any extra notes -->
 
 ## History
 
@@ -29,3 +27,4 @@ In Progress
 - Dashboard Collections: replaced dummy collection data in the dashboard's main area with real data from Neon via Prisma; added `src/lib/db/collections.ts` (`getRecentCollections`) computing item count and dominant-type accent color per collection, updated `CollectionsGrid` to take collections as a prop, and made the dashboard page fetch collections server-side
 - Dashboard Items: replaced dummy pinned/recent item data with real data from Neon via Prisma; added `src/lib/db/user.ts` (`getCurrentUserId`, shared with collections), `src/lib/db/items.ts` (`getDashboardItems`, `getItemStats`), and `getCollectionStats` in collections.ts; updated `ItemList` to use real item summaries and made `StatsCards` an async server component pulling real item/collection counts
 - Stats & Sidebar: replaced the mock-data-driven sidebar with real database data — added `getCurrentUser` to `src/lib/db/user.ts`, `getItemTypesWithCounts` to `src/lib/db/items.ts`, and `getSidebarCollections` to `src/lib/db/collections.ts` (favorites and recents split out, since the existing `getRecentCollections` mixed both under one limit); `Sidebar` is now a presentational component fed by these, linking item types to `/items/[slug]` and collections to `/collections/[id]`, with a "View all collections" link and a dominant-type colored dot on recent collections; extracted the interactive header/toggle/Sheet chrome into a new `DashboardChrome` client component so `dashboard/layout.tsx` could become an async server component that fetches sidebar data once; favorites section is hidden entirely when there are no favorite collections
+- Add Pro Badge to Sidebar: added a `PRO_ITEM_TYPE_SLUGS` set (`files`, `images`) in `src/components/dashboard/sidebar.tsx` and rendered a subtle outline-variant ShadCN `Badge` with uppercase "PRO" text next to those two item type entries in the sidebar's Types list
