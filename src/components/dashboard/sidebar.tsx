@@ -1,10 +1,13 @@
 import { Settings, Star } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
 import type { CollectionSummary } from "@/lib/db/collections";
 import type { ItemTypeSummary } from "@/lib/db/items";
 import type { CurrentUser } from "@/lib/db/user";
+
+const PRO_ITEM_TYPE_SLUGS = new Set(["files", "images"]);
 
 interface SidebarProps {
   itemTypes: ItemTypeSummary[];
@@ -41,6 +44,11 @@ export function Sidebar({
                     <span className="flex items-center gap-2 capitalize">
                       {Icon && <Icon className="size-4" style={{ color: type.color }} />}
                       {type.name}s
+                      {PRO_ITEM_TYPE_SLUGS.has(type.slug) && (
+                        <Badge variant="outline" className="text-[10px] uppercase">
+                          Pro
+                        </Badge>
+                      )}
                     </span>
                     <span className="text-xs text-muted-foreground">{type.count}</span>
                   </Link>
