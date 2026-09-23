@@ -20,11 +20,18 @@ export interface CollectionSummary {
   updatedAt: Date;
 }
 
-type CollectionWithItems = Prisma.CollectionGetPayload<{
-  include: { items: { include: { item: { include: { itemType: true } } } } };
+type CollectionWithItemTypes = Prisma.CollectionGetPayload<{
+  select: {
+    id: true;
+    name: true;
+    description: true;
+    isFavorite: true;
+    updatedAt: true;
+    items: { select: { item: { select: { itemType: { select: { id: true; icon: true; color: true } } } } } };
+  };
 }>;
 
-function toCollectionSummary(collection: CollectionWithItems): CollectionSummary {
+function toCollectionSummary(collection: CollectionWithItemTypes): CollectionSummary {
   const typeCounts = new Map<string, CollectionTypeSummary>();
   for (const { item } of collection.items) {
     const existing = typeCounts.get(item.itemType.id);
@@ -62,9 +69,14 @@ async function queryCollectionSummaries(
     where,
     orderBy: { updatedAt: "desc" },
     take,
-    include: {
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      isFavorite: true,
+      updatedAt: true,
       items: {
-        include: { item: { include: { itemType: true } } },
+        select: { item: { select: { itemType: { select: { id: true, icon: true, color: true } } } } },
       },
     },
   });
@@ -84,12 +96,15 @@ export interface SidebarCollections {
   recent: CollectionSummary[];
 }
 
-export async function getSidebarCollections(recentLimit = 5): Promise<SidebarCollections> {
+export async function getSidebarCollections(
+  recentLimit = 5,
+  favoritesLimit = 10,
+): Promise<SidebarCollections> {
   const userId = await getCurrentUserId();
   if (!userId) return { favorites: [], recent: [] };
 
   const [favorites, recent] = await Promise.all([
-    queryCollectionSummaries({ userId, isFavorite: true }),
+    queryCollectionSummaries({ userId, isFavorite: true }, favoritesLimit),
     queryCollectionSummaries({ userId, isFavorite: false }, recentLimit),
   ]);
 

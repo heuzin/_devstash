@@ -42,7 +42,10 @@ export interface DashboardItems {
   recent: ItemSummary[];
 }
 
-export async function getDashboardItems(recentLimit = 10): Promise<DashboardItems> {
+export async function getDashboardItems(
+  recentLimit = 10,
+  pinnedLimit = 20,
+): Promise<DashboardItems> {
   const userId = await getCurrentUserId();
   if (!userId) return { pinned: [], recent: [] };
 
@@ -50,6 +53,7 @@ export async function getDashboardItems(recentLimit = 10): Promise<DashboardItem
     prisma.item.findMany({
       where: { userId, isPinned: true },
       orderBy: { updatedAt: "desc" },
+      take: pinnedLimit,
       include: { itemType: true, tags: true },
     }),
     prisma.item.findMany({

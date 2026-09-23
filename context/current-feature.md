@@ -1,18 +1,22 @@
 # Current Feature
 
-<!-- Feature name and short description -->
+Data-Fetching Cleanup: low-risk quick wins from the code-scanner audit — fix an N+1-style over-fetch in collection summaries, bound two unlimited queries, and add missing indexes. No auth/mutation work (not implemented yet).
 
 ## Status
 
-<!-- Not Started | In Progress | Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals and requirements -->
+- Fix N+1 in `queryCollectionSummaries` (`src/lib/db/collections.ts:61-70`, used by `getRecentCollections` and twice by `getSidebarCollections`): it `include`s full `Item` rows (content, url, fileUrl, etc.) just to compute item counts and per-type breakdowns. Fix using Prisma conventions only (no raw SQL) — switch to a `select` scoped to `itemType.{id,icon,color}`, or use Prisma's `groupBy`/`_count` aggregation.
+- Add a `take` limit to the unbounded favorites query in `getSidebarCollections` (`src/lib/db/collections.ts:92`) and the unbounded pinned-items query in `getDashboardItems` (`src/lib/db/items.ts:50-54`), matching the `recentLimit` pattern already used elsewhere in those files.
+- Add missing indexes in `prisma/schema.prisma` via a proper migration:
+  - `Item`: `@@index([userId, createdAt])` — the dashboard's "Recent Items" query sorts by `createdAt`, but the existing index is on `[userId, lastUsedAt]` (added for a "recently used" feature that isn't wired up yet).
+  - `Collection`: `@@index([userId, isFavorite])` — matches the `{ userId, isFavorite }` filter used in `getSidebarCollections` and `getCollectionStats`.
 
 ## Notes
 
-<!-- Any extra notes -->
+Source: code-scanner audit findings #1-#3 (2026-09-23). Excluded from this pass: dead `src/lib/mock-data.ts` (leave as-is per instruction), inline dynamic-color styles (item #5, a style/architecture decision, not a quick fix), and the seeded demo password (item #7, auth-related — auth isn't implemented yet).
 
 ## History
 
