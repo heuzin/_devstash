@@ -1,26 +1,18 @@
-# Current Feature: Auth Credentials - Email/Password Provider
+# Current Feature
 
 <!-- Feature name and short description -->
 
 ## Status
 
-In Progress
+<!-- Not Started | In Progress | Completed -->
 
 ## Goals
 
-- Add a Credentials provider for email/password authentication, alongside the existing GitHub OAuth provider
-- Add a registration API route at `POST /api/auth/register` that accepts name, email, password, confirmPassword
-- Registration validates passwords match, checks for existing user, hashes the password with bcryptjs, and creates the user
-- Sign-in with email/password works via `/api/auth/signin` and redirects to `/dashboard`
-- GitHub OAuth continues to work alongside the new Credentials provider
+<!-- Goals and requirements -->
 
 ## Notes
 
-- `User.password` already exists in the Prisma schema (`String?`, hashed, null for OAuth-only users) — no migration needed for this field
-- bcryptjs is already installed (used by the seed script)
-- Follow the existing split config pattern: `auth.config.ts` gets the Credentials provider with an `authorize: () => null` placeholder (edge-safe, no bcrypt/Prisma); `auth.ts` overrides it with the real bcrypt validation logic (has Node runtime + Prisma access)
-- Testing plan: curl the registration route, sign in via `/api/auth/signin`, verify redirect to `/dashboard`, and re-verify GitHub OAuth still works
-- Reference: https://authjs.dev/getting-started/authentication/credentials
+<!-- Any extra notes -->
 
 ## History
 
@@ -38,3 +30,4 @@ In Progress
 - Add Pro Badge to Sidebar: added a `PRO_ITEM_TYPE_SLUGS` set (`files`, `images`) in `src/components/dashboard/sidebar.tsx` and rendered a subtle outline-variant ShadCN `Badge` with uppercase "PRO" text next to those two item type entries in the sidebar's Types list
 - Data-Fetching Cleanup: fixed the N+1-style over-fetch in `queryCollectionSummaries` (`src/lib/db/collections.ts`) by switching its `include` of full `Item` rows to a `select` scoped to `itemType.{id,icon,color}`; added `take` limits to the previously unbounded favorites query in `getSidebarCollections` and pinned-items query in `getDashboardItems`; added `Item.@@index([userId, createdAt])` and `Collection.@@index([userId, isFavorite])` via migration `20260923211358_add_item_created_at_and_collection_favorite_indexes`
 - Auth Setup - NextAuth + GitHub Provider: installed `next-auth@beta` and `@auth/prisma-adapter`; added the split edge-compatible config pattern (`src/auth.config.ts` for providers, `src/auth.ts` for the Prisma adapter + JWT session strategy, reusing the existing `src/lib/prisma.ts` singleton), the NextAuth route handler at `src/app/api/auth/[...nextauth]/route.ts`, `src/proxy.ts` protecting `/dashboard/:path*` with a redirect to NextAuth's default sign-in page (`/api/auth/signin?callbackUrl=...`), and `src/types/next-auth.d.ts` extending `Session.user` with `id`; verified end-to-end with Playwright (redirect on unauthenticated `/dashboard` access, GitHub OAuth authorize redirect)
+- Auth Credentials - Email/Password Provider: added a Credentials provider for email/password authentication alongside the existing GitHub OAuth provider, following the split config pattern (`auth.config.ts` gets an edge-safe `authorize: () => null` placeholder; `auth.ts` overrides it with real bcrypt validation against Prisma, filtering the placeholder out of `authConfig.providers` and normalizing email casing); added `POST /api/auth/register` validated with zod (name, email, password, confirmPassword), checking for existing users, hashing passwords with bcryptjs at 12 rounds, and handling the duplicate-email race with a `P2002` catch; verified end-to-end with curl (registration success/duplicate/validation errors, credentials sign-in with mixed-case email, session, `/dashboard` redirect, and GitHub OAuth authorize redirect still working); `User.password` already existed in the schema so no migration was needed
