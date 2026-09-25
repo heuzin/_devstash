@@ -26,3 +26,5 @@ When using the Neon MCP tools (listing branches, running SQL, migrations, etc.):
 - `npm run build` — production build
 - `npm run start` — run the production build
 - `npm run lint` — lint with ESLint (flat config in `eslint.config.mjs`, extends `eslint-config-next`)
+
+**IMPORTANT:** Do not add Claude to any commit messages

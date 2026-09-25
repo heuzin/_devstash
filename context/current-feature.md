@@ -1,18 +1,26 @@
-# Current Feature
+# Current Feature: Auth Credentials - Email/Password Provider
 
 <!-- Feature name and short description -->
 
 ## Status
 
-<!-- Not Started | In Progress | Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals and requirements -->
+- Add a Credentials provider for email/password authentication, alongside the existing GitHub OAuth provider
+- Add a registration API route at `POST /api/auth/register` that accepts name, email, password, confirmPassword
+- Registration validates passwords match, checks for existing user, hashes the password with bcryptjs, and creates the user
+- Sign-in with email/password works via `/api/auth/signin` and redirects to `/dashboard`
+- GitHub OAuth continues to work alongside the new Credentials provider
 
 ## Notes
 
-<!-- Any extra notes -->
+- `User.password` already exists in the Prisma schema (`String?`, hashed, null for OAuth-only users) — no migration needed for this field
+- bcryptjs is already installed (used by the seed script)
+- Follow the existing split config pattern: `auth.config.ts` gets the Credentials provider with an `authorize: () => null` placeholder (edge-safe, no bcrypt/Prisma); `auth.ts` overrides it with the real bcrypt validation logic (has Node runtime + Prisma access)
+- Testing plan: curl the registration route, sign in via `/api/auth/signin`, verify redirect to `/dashboard`, and re-verify GitHub OAuth still works
+- Reference: https://authjs.dev/getting-started/authentication/credentials
 
 ## History
 
