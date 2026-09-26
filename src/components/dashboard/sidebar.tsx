@@ -1,7 +1,7 @@
-import { Settings, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import Link from "next/link";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { UserMenu } from "@/components/dashboard/user-menu";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
 import type { CollectionSummary } from "@/lib/db/collections";
 import type { ItemTypeSummary } from "@/lib/db/items";
@@ -22,11 +22,6 @@ export function Sidebar({
   recentCollections,
   user,
 }: SidebarProps) {
-  const initials = (user?.name ?? "?")
-    .split(" ")
-    .map((part) => part[0])
-    .join("");
-
   return (
     <div className="flex h-full flex-col">
       <nav className="flex-1 overflow-y-auto p-4 pb-20">
@@ -111,21 +106,7 @@ export function Sidebar({
         </Link>
       </nav>
 
-      <div className="fixed inset-x-0 bottom-0 z-10 flex w-64 items-center gap-2 border-t border-border bg-background p-4">
-        <Avatar className="size-8">
-          <AvatarFallback>{initials}</AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{user?.name}</p>
-          <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
-        </div>
-        <Link
-          href="/settings"
-          className="flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-        >
-          <Settings className="size-4" />
-        </Link>
-      </div>
+      <UserMenu user={user} />
     </div>
   );
 }

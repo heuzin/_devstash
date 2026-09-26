@@ -1,18 +1,38 @@
-# Current Feature
+# Current Feature: Auth UI - Sign In, Register & Sign Out
 
 <!-- Feature name and short description -->
 
 ## Status
 
-<!-- Not Started | In Progress | Completed -->
+In Progress
 
 ## Goals
 
-<!-- Goals and requirements -->
+- Custom Sign In page (`/sign-in`) replacing the NextAuth default: email/password fields, "Sign in with GitHub" button, link to register page, form validation and error display
+- Custom Register page (`/register`): name/email/password/confirm-password fields, validation (passwords match, email format), submits to `/api/auth/register`, redirects to sign-in on success
+- Bottom-of-sidebar user block: avatar (GitHub image or initials fallback), user name, dropdown/popup on avatar click with "Sign out" link, clicking the icon navigates to `/profile`
 
 ## Notes
 
-<!-- Any extra notes -->
+- Avatar logic: use `image` when present (GitHub), otherwise generate initials from `name` (e.g., "Brad Traversy" → "BT")
+- Build a reusable avatar component that handles both the image and initials cases
+- Testing checklist from spec: `/sign-in` renders custom UI; GitHub sign-in flow works; email/password sign-in flow works; avatar shows correctly in top bar/sidebar; avatar click opens dropdown; "Sign out" logs out and redirects; `/register` creates an account and redirects to sign-in
+
+### Implementation summary
+
+- Added shadcn `dropdown-menu` and `label` components
+- `src/lib/db/user.ts`: `getCurrentUser`/`getCurrentUserId` now read the real NextAuth session (`auth()`) instead of a hardcoded demo email; `CurrentUser` gained an `image` field
+- `src/components/user-avatar.tsx`: reusable `UserAvatar` (GitHub image or initials fallback)
+- `src/components/dashboard/user-menu.tsx`: client component replacing the sidebar's static footer — avatar, name, email, and a dropdown with "Profile" (`/profile`) and "Sign out" (`next-auth/react` `signOut`)
+- `src/components/dashboard/sidebar.tsx`: now renders `UserMenu` instead of the old static avatar/settings-gear block
+- `src/lib/validations/auth.ts`: shared `signInSchema`/`registerSchema`, reused by both the client forms and `src/app/api/auth/register/route.ts`
+- `src/app/(auth)/layout.tsx`, `.../sign-in/page.tsx`, `.../register/page.tsx`: custom auth pages (route group, no URL change) with `SignInForm`/`RegisterForm` client components under `src/components/auth/`
+- `src/components/icons/github-icon.tsx`: inline GitHub mark (lucide-react v1 dropped brand icons)
+- `src/app/profile/page.tsx`: minimal protected profile page
+- `src/auth.config.ts`: added `pages: { signIn: "/sign-in" }`
+- `src/proxy.ts`: redirects unauthenticated requests to `/sign-in` (was NextAuth's default page) and now also protects `/profile/:path*`
+- Added shadcn `sonner` toaster (first use in the project, per the planned Sonner toast pattern in project-overview.md); mounted `<Toaster />` in the root layout; `RegisterForm` fires `toast.success("Account created. You can now sign in.")` on success instead of the old `?registered=1` query-param banner on the sign-in page
+- Verified end-to-end with Playwright: custom sign-in page renders, credentials sign-in redirects to `/dashboard` with real session data in the sidebar, dropdown shows Profile/Sign out, Profile link and Sign out both work, signing out re-blocks `/dashboard`, register page validates password mismatch client-side and successfully creates an account, redirecting to sign-in with a confirmation message; test account cleaned up from the Neon dev branch afterward
 
 ## History
 

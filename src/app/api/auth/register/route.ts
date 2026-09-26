@@ -1,24 +1,8 @@
 import { NextResponse } from "next/server";
 import bcryptjs from "bcryptjs";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
-
-const registerSchema = z
-  .object({
-    name: z.string().trim().min(1, "Name is required"),
-    email: z
-      .string()
-      .trim()
-      .toLowerCase()
-      .pipe(z.email({ message: "Invalid email address" })),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+import { registerSchema } from "@/lib/validations/auth";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
