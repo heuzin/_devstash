@@ -53,7 +53,9 @@ export function RegisterForm() {
       return;
     }
 
-    toast.success("Account created. You can now sign in.", { richColors: true });
+    toast.success("Account created. Check your email to verify your account.", {
+      richColors: true,
+    });
     router.push("/sign-in");
   }
 

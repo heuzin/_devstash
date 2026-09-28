@@ -1,18 +1,35 @@
-# Current Feature
+# Current Feature: Email Verification on Register
 
 <!-- Feature name and short description -->
 
+Send a verification email when a user registers via the credentials (email/password) flow. The user clicks a link in that email to verify their account. Unverified users can still sign in but see a banner prompting them to verify, with a resend option.
+
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- On successful registration (`POST /api/auth/register`), send a verification email to the new user via Resend
+- Email contains a unique link the user clicks to verify their email address
+- Clicking the link marks the user's email as verified (`User.emailVerified` already exists in the Prisma schema) and confirms this to the user
+- Verification tokens are single-use and expire after 24 hours
+- Handle already-verified and expired/invalid token cases gracefully with clear user-facing messages
+- Signed-in users with an unverified email see a dismissible banner (e.g. on the dashboard) prompting them to verify, with a "resend verification email" action
+- Unverified users are NOT blocked from signing in or using the app
 
 ## Notes
 
 <!-- Additional context, constraints, or details from spec -->
+
+- Email provider: [Resend](https://resend.com/docs) — `RESEND_API_KEY` already present in `.env`
+- Prisma schema already has `VerificationToken` (identifier, token, expires) and `User.emailVerified` — likely reusable for this flow instead of a new model, but confirm shape fits (NextAuth's `VerificationToken` model is normally used for magic-link/passwordless sign-in, not registration verification — may need adjustment or a dedicated token model)
+- GitHub OAuth users already have `emailVerified` implicitly (trusted from provider) — this flow is specifically for the credentials/email-password registration path
+- Decisions:
+  - Unverified users CAN sign in; dashboard shows a dismissible banner prompting verification (no route gating)
+  - Verification token expires after 24 hours
+  - Send from Resend's shared test domain (`onboarding@resend.dev`) for now
+  - Include a "resend verification email" action (e.g. button in the banner) in this feature
 
 ## History
 

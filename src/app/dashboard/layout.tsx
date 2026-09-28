@@ -1,5 +1,6 @@
 import { DashboardChrome } from "@/components/dashboard/dashboard-chrome";
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { VerifyEmailBanner } from "@/components/dashboard/verify-email-banner";
 import { getSidebarCollections } from "@/lib/db/collections";
 import { getItemTypesWithCounts } from "@/lib/db/items";
 import { getCurrentUser } from "@/lib/db/user";
@@ -20,5 +21,10 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
     />
   );
 
-  return <DashboardChrome sidebar={sidebar}>{children}</DashboardChrome>;
+  return (
+    <DashboardChrome sidebar={sidebar}>
+      {user && !user.emailVerified && <VerifyEmailBanner />}
+      {children}
+    </DashboardChrome>
+  );
 }
