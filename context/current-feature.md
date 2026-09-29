@@ -1,30 +1,18 @@
-# Current Feature: Email Verification Toggle
+# Current Feature
 
 <!-- Feature name and short description -->
 
-Add a flag to enable/disable the email-verification-on-register system (added in the previous feature). Motivation: no custom domain is verified in Resend yet, so the shared sandbox sender can only deliver to the Resend account's own address — everything else either fails outright or is unreliable. Need an easy way to turn the whole system off while that's true, without ripping the feature out.
-
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- A single flag controls whether the email verification system is active, following the same pattern as the documented `ENFORCE_PLAN_LIMITS` flag in `src/lib/plan.ts` (env var + small helper function), for consistency
-- Flag name: `EMAIL_VERIFICATION_ENABLED`, defaults to enabled (`true`) when unset — set to `"false"` in `.env` to disable; this preserves current shipped behavior by default and makes disabling an explicit opt-out
-- When disabled:
-  - `POST /api/auth/register` does NOT create a verification token or attempt to send an email via Resend — registration just succeeds
-  - The dashboard "verify your email" banner is not shown, regardless of a user's `emailVerified` state
-  - The `resendVerificationEmail` server action short-circuits (no-op / friendly error) instead of trying to send
-  - `GET /verify-email` still works if someone hits it directly with an old valid token (harmless), but isn't reachable from the UI
-- Toggling the flag requires no code changes and no migration — just an env var change and restart
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
 <!-- Additional context, constraints, or details from spec -->
-
-- Implementation approach: env var, matching the existing documented `ENFORCE_PLAN_LIMITS` convention in @context/project-overview.md rather than introducing a new mechanism (DB-backed toggle, feature-flag service, etc.) — simplest fit for a single-developer/dev-stage flag
-- This does NOT touch the underlying verification logic (token creation/consumption, Resend integration) — it only gates whether that logic runs
 
 ## History
 
@@ -45,3 +33,4 @@ In Progress
 - Auth Credentials - Email/Password Provider: added a Credentials provider for email/password authentication alongside the existing GitHub OAuth provider, following the split config pattern (`auth.config.ts` gets an edge-safe `authorize: () => null` placeholder; `auth.ts` overrides it with real bcrypt validation against Prisma, filtering the placeholder out of `authConfig.providers` and normalizing email casing); added `POST /api/auth/register` validated with zod (name, email, password, confirmPassword), checking for existing users, hashing passwords with bcryptjs at 12 rounds, and handling the duplicate-email race with a `P2002` catch; verified end-to-end with curl (registration success/duplicate/validation errors, credentials sign-in with mixed-case email, session, `/dashboard` redirect, and GitHub OAuth authorize redirect still working); `User.password` already existed in the schema so no migration was needed
 - Auth UI - Sign In, Register & Sign Out: replaced NextAuth's default sign-in page with a custom `/sign-in` page (email/password + GitHub button, zod-validated, error display) and a custom `/register` page (name/email/password/confirm, redirects to sign-in on success via Sonner toast); added a reusable `UserAvatar` component (GitHub image or name-initials fallback) and a sidebar `UserMenu` dropdown (Profile/Sign out) backed by the real session through `getCurrentUser`/`getCurrentUserId`; added shadcn `dropdown-menu`, `label`, and `sonner` components, an inline `GithubIcon` (lucide-react v1 dropped brand icons), and shared `signInSchema`/`registerSchema` validations reused by both the client forms and the register API route; `proxy.ts` now points unauthenticated redirects at `/sign-in` and also protects `/profile`; verified end-to-end with Playwright (custom sign-in/register UI, credentials and GitHub flows, avatar/dropdown, sign-out, password-mismatch validation) and cleaned up the test account from the Neon dev branch afterward
 - Email Verification on Register: registering via credentials now creates a 24h single-use token (reusing the existing `VerificationToken` model, keyed by email) and emails a verify link via Resend (`src/lib/resend.ts`, `src/lib/email/send-verification-email.ts`); added `GET /verify-email` (`src/app/(auth)/verify-email/page.tsx`) as a server component that consumes the token and shows verified/expired/invalid states; unverified users can still sign in and use the app but see a dismissible `VerifyEmailBanner` on the dashboard with a "Resend email" action backed by a new `resendVerificationEmail` Server Action (`src/actions/auth.ts`, the project's first); extended `getCurrentUser` (`src/lib/db/user.ts`) with `emailVerified`; added a `getSiteUrl` helper (`src/lib/site-url.ts`) to build absolute verify links from request headers; added shadcn `alert` component. Verified end-to-end with Playwright against the dev DB (register → token created → email send attempted → sign in → banner shown → resend rotates the token → verify link marks emailVerified and deletes the token → banner disappears → expired/invalid tokens show distinct messages) and confirmed via Resend's own delivery API that emails are actually sent/delivered (the shared `onboarding@resend.dev` sandbox sender works but commonly lands in spam until a real domain is verified in Resend). Also added `scripts/delete-non-demo-users.ts` (dry-run by default, `--yes` to actually delete) for resetting the dev database back to just the seeded demo user, and used it to clean up test accounts created during this work.
+- Email Verification Toggle: added `EMAIL_VERIFICATION_ENABLED` (`src/lib/email-verification.ts`, `isEmailVerificationEnabled()`), following the same env-var-plus-helper pattern documented for `ENFORCE_PLAN_LIMITS`; defaults to enabled when unset, set to `"false"` to disable. When disabled, `POST /api/auth/register` skips creating a verification token and sending the Resend email, and stamps the new user's `emailVerified` immediately (so re-enabling the flag later doesn't retroactively flag pre-existing accounts as unverified or surface the banner for them); the dashboard `VerifyEmailBanner` is hidden regardless of a user's verified state; and the `resendVerificationEmail` action short-circuits with a friendly error instead of attempting to send. `GET /verify-email` is untouched and still consumes old tokens directly if hit, just unreachable from the UI when disabled. No migration needed since `User.emailVerified` already existed. Verified the flag helper directly across `unset`/`"true"`/`"false"`/wrong-case inputs and the register-route stamping behavior for both states against the dev DB.
