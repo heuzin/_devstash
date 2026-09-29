@@ -7,6 +7,8 @@ export interface CurrentUser {
   email: string;
   image: string | null;
   emailVerified: boolean;
+  hasPassword: boolean;
+  createdAt: Date;
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -15,15 +17,18 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { emailVerified: true },
+    select: { emailVerified: true, password: true, createdAt: true },
   });
+  if (!dbUser) return null;
 
   return {
     id: session.user.id,
     name: session.user.name ?? session.user.email ?? "User",
     email: session.user.email ?? "",
     image: session.user.image ?? null,
-    emailVerified: dbUser?.emailVerified != null,
+    emailVerified: dbUser.emailVerified != null,
+    hasPassword: dbUser.password != null,
+    createdAt: dbUser.createdAt,
   };
 }
 
