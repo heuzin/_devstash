@@ -1,18 +1,30 @@
-# Current Feature
+# Current Feature: Forgot Password
 
-<!-- Feature name and short description -->
+Let users reset a forgotten password via an emailed link, reusing the existing `VerificationToken` model.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- "Forgot password?" link on the `/sign-in` page (next to or below the password field)
+- `/forgot-password` page: email input, submits to a Server Action that always responds with a generic success message (don't reveal whether the email exists)
+- If the email matches a user with a `password` set, create a single-use reset token and email a reset link via Resend, following the existing `sendVerificationEmail` pattern
+- `/reset-password?token=...` page: new password + confirm password form (zod-validated, matching the register form's password rules)
+- Submitting resets the user's password (bcrypt hash, 12 rounds) and invalidates the token; show distinct invalid/expired states like `/verify-email` does
+- On success, redirect to `/sign-in` with a toast, same as register's flow
+- GitHub-only users (no `password` set) who request a reset should not silently get a working "password" flow — decide messaging for that case (see Notes)
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Reuse `VerificationToken` as-is (no schema/migration changes). To keep reset tokens from colliding or being interchangeable with email-verification tokens that share the same user email, scope the `identifier` with a prefix, e.g. `reset-password:${email}`, mirroring how `createVerificationToken` currently uses the bare email as `identifier`. Follow the same create/consume pattern as `src/lib/auth/verification-token.ts` (`createVerificationToken` / `consumeVerificationToken`), but as new functions (e.g. `createPasswordResetToken` / `consumePasswordResetToken`) — don't overload the existing ones, since consuming a verification token marks `emailVerified`, which is unrelated to a password reset.
+- 24h token TTL and single-use, `crypto.randomBytes(32).toString("hex")`, deleting any prior outstanding token for that identifier before creating a new one — same as the existing token lib.
+- Email sending: add `sendPasswordResetEmail` alongside `src/lib/email/send-verification-email.ts`, same Resend `from` address and styling, via `getSiteUrl()` for the absolute link.
+- Server Actions in `src/actions/auth.ts` alongside `resendVerificationEmail`: `requestPasswordReset(email)` and `resetPassword(token, password, confirmPassword)`, both returning the existing `{ success, error }` shape.
+- Validation: add `forgotPasswordSchema` (email) and `resetPasswordSchema` (password/confirmPassword, reusing register's password rules) to `src/lib/validations/auth.ts`.
+- Always return the same generic success message from `requestPasswordReset` regardless of whether the email exists or is GitHub-only, to avoid user enumeration — log/skip silently server-side for those cases.
+- New route group pages: `src/app/(auth)/forgot-password/page.tsx` and `src/app/(auth)/reset-password/page.tsx`, matching the existing `(auth)` layout/card style used by sign-in, register, and verify-email.
 
 ## History
 
