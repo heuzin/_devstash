@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createVerificationToken } from "@/lib/auth/verification-token";
 import { sendVerificationEmail } from "@/lib/email/send-verification-email";
 import { getSiteUrl } from "@/lib/site-url";
+import { isEmailVerificationEnabled } from "@/lib/email-verification";
 
 interface ActionResult {
   success: boolean;
@@ -12,6 +13,10 @@ interface ActionResult {
 }
 
 export async function resendVerificationEmail(): Promise<ActionResult> {
+  if (!isEmailVerificationEnabled()) {
+    return { success: false, error: "Email verification is currently disabled" };
+  }
+
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: "You must be signed in to do this" };

@@ -1,18 +1,30 @@
-# Current Feature
+# Current Feature: Email Verification Toggle
 
 <!-- Feature name and short description -->
 
+Add a flag to enable/disable the email-verification-on-register system (added in the previous feature). Motivation: no custom domain is verified in Resend yet, so the shared sandbox sender can only deliver to the Resend account's own address — everything else either fails outright or is unreliable. Need an easy way to turn the whole system off while that's true, without ripping the feature out.
+
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- A single flag controls whether the email verification system is active, following the same pattern as the documented `ENFORCE_PLAN_LIMITS` flag in `src/lib/plan.ts` (env var + small helper function), for consistency
+- Flag name: `EMAIL_VERIFICATION_ENABLED`, defaults to enabled (`true`) when unset — set to `"false"` in `.env` to disable; this preserves current shipped behavior by default and makes disabling an explicit opt-out
+- When disabled:
+  - `POST /api/auth/register` does NOT create a verification token or attempt to send an email via Resend — registration just succeeds
+  - The dashboard "verify your email" banner is not shown, regardless of a user's `emailVerified` state
+  - The `resendVerificationEmail` server action short-circuits (no-op / friendly error) instead of trying to send
+  - `GET /verify-email` still works if someone hits it directly with an old valid token (harmless), but isn't reachable from the UI
+- Toggling the flag requires no code changes and no migration — just an env var change and restart
 
 ## Notes
 
 <!-- Additional context, constraints, or details from spec -->
+
+- Implementation approach: env var, matching the existing documented `ENFORCE_PLAN_LIMITS` convention in @context/project-overview.md rather than introducing a new mechanism (DB-backed toggle, feature-flag service, etc.) — simplest fit for a single-developer/dev-stage flag
+- This does NOT touch the underlying verification logic (token creation/consumption, Resend integration) — it only gates whether that logic runs
 
 ## History
 

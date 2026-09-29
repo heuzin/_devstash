@@ -4,6 +4,7 @@ import { VerifyEmailBanner } from "@/components/dashboard/verify-email-banner";
 import { getSidebarCollections } from "@/lib/db/collections";
 import { getItemTypesWithCounts } from "@/lib/db/items";
 import { getCurrentUser } from "@/lib/db/user";
+import { isEmailVerificationEnabled } from "@/lib/email-verification";
 
 export default async function DashboardLayout({ children }: LayoutProps<"/dashboard">) {
   const [itemTypes, { favorites, recent }, user] = await Promise.all([
@@ -23,7 +24,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
 
   return (
     <DashboardChrome sidebar={sidebar}>
-      {user && !user.emailVerified && <VerifyEmailBanner />}
+      {isEmailVerificationEnabled() && user && !user.emailVerified && <VerifyEmailBanner />}
       {children}
     </DashboardChrome>
   );
