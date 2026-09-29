@@ -1,28 +1,18 @@
-# Current Feature: Profile Page
+# Current Feature
 
 <!-- Feature name and short description -->
 
-Create the profile page with user info, stats, change password and delete account.
-
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Create profile page at `/profile` route (protected, requires authentication)
-- Display user info: email, name, avatar (GitHub or initials), account creation date
-- Show usage stats: total items, total collections, breakdown by item type
-- Add change password action (email/password users only, not GitHub OAuth)
-- Add delete account action with confirmation dialog
-- Follow existing codebase patterns for data fetching and components
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- Avatar logic: use GitHub avatar from OAuth if available, otherwise generate initials from name/email
-- Change password button should only appear for users who signed up with email/password (not GitHub OAuth)
-- Delete account needs a confirmation dialog to prevent accidental deletion
-- Item type breakdown should show counts for each type (snippets, prompts, notes, commands, links, files, images)
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -45,3 +35,4 @@ In Progress
 - Email Verification on Register: registering via credentials now creates a 24h single-use token (reusing the existing `VerificationToken` model, keyed by email) and emails a verify link via Resend (`src/lib/resend.ts`, `src/lib/email/send-verification-email.ts`); added `GET /verify-email` (`src/app/(auth)/verify-email/page.tsx`) as a server component that consumes the token and shows verified/expired/invalid states; unverified users can still sign in and use the app but see a dismissible `VerifyEmailBanner` on the dashboard with a "Resend email" action backed by a new `resendVerificationEmail` Server Action (`src/actions/auth.ts`, the project's first); extended `getCurrentUser` (`src/lib/db/user.ts`) with `emailVerified`; added a `getSiteUrl` helper (`src/lib/site-url.ts`) to build absolute verify links from request headers; added shadcn `alert` component. Verified end-to-end with Playwright against the dev DB (register → token created → email send attempted → sign in → banner shown → resend rotates the token → verify link marks emailVerified and deletes the token → banner disappears → expired/invalid tokens show distinct messages) and confirmed via Resend's own delivery API that emails are actually sent/delivered (the shared `onboarding@resend.dev` sandbox sender works but commonly lands in spam until a real domain is verified in Resend). Also added `scripts/delete-non-demo-users.ts` (dry-run by default, `--yes` to actually delete) for resetting the dev database back to just the seeded demo user, and used it to clean up test accounts created during this work.
 - Email Verification Toggle: added `EMAIL_VERIFICATION_ENABLED` (`src/lib/email-verification.ts`, `isEmailVerificationEnabled()`), following the same env-var-plus-helper pattern documented for `ENFORCE_PLAN_LIMITS`; defaults to enabled when unset, set to `"false"` to disable. When disabled, `POST /api/auth/register` skips creating a verification token and sending the Resend email, and stamps the new user's `emailVerified` immediately (so re-enabling the flag later doesn't retroactively flag pre-existing accounts as unverified or surface the banner for them); the dashboard `VerifyEmailBanner` is hidden regardless of a user's verified state; and the `resendVerificationEmail` action short-circuits with a friendly error instead of attempting to send. `GET /verify-email` is untouched and still consumes old tokens directly if hit, just unreachable from the UI when disabled. No migration needed since `User.emailVerified` already existed. Verified the flag helper directly across `unset`/`"true"`/`"false"`/wrong-case inputs and the register-route stamping behavior for both states against the dev DB.
 - Forgot Password: added a "Forgot password?" link on `/sign-in` leading to `/forgot-password`, which always returns a generic success message via a new `requestPasswordReset` Server Action, regardless of whether the email exists or belongs to a GitHub-only account, to avoid user enumeration; an email is sent via Resend (`src/lib/email/send-password-reset-email.ts`) only when the account has a password set. Reuses the existing `VerificationToken` model for storage, scoped with a `reset-password:` identifier prefix so reset tokens can't be confused with email-verification tokens for the same address (`src/lib/auth/password-reset-token.ts`, `createPasswordResetToken`/`consumePasswordResetToken`, mirroring the existing verification-token lib's 24h TTL and single-use pattern). `/reset-password?token=...` (`src/app/(auth)/reset-password/page.tsx`) lets the user set a new password (zod-validated, bcrypt-hashed at 12 rounds via a new `resetPassword` Server Action), showing distinct invalid/expired states and redirecting to `/sign-in` with a toast on success. Verified end-to-end with Playwright against the dev DB (forgot-password generic message, token created with the scoped identifier, invalid-token rejection, valid-token reset, sign-in with the new password, token deleted after use) and restored the demo user's seeded password afterward.
+- Profile Page: added `/profile` (already proxy-protected) showing account info (avatar via existing `UserAvatar`, name, email, join date from `User.createdAt`), usage stats (total items/collections via existing `getItemStats`/`getCollectionStats`, plus a per-type breakdown via existing `getItemTypesWithCounts` and `ITEM_TYPE_ICONS`), a change-password form, and a delete-account flow; extended `getCurrentUser` (`src/lib/db/user.ts`) with `hasPassword` and `createdAt` so the change-password card only renders for credentials users (hidden for GitHub-only accounts); added `changePasswordSchema` to `src/lib/validations/auth.ts` and a new `src/actions/profile.ts` with `changePassword` (bcrypt-verifies the current password before hashing and saving the new one at 12 rounds) and `deleteAccount` (deletes the `User` row, relying on existing `onDelete: Cascade` relations to remove items/collections/accounts/sessions, then calls NextAuth's `signOut` to redirect to `/`) Server Actions; added `src/components/profile/change-password-form.tsx` (mirrors the existing `ResetPasswordForm` pattern) and `src/components/profile/delete-account-dialog.tsx` (shadcn `alert-dialog`, added via the CLI along with `separator`). Verified end-to-end with Playwright against the dev DB: wrong-current-password rejection, successful password change plus re-sign-in with the new password (then restored the demo user's seeded password), and full account deletion on a disposable test account (confirmed session cleared, `/profile` redirects to sign-in, and the user row no longer exists via `scripts/delete-non-demo-users.ts`'s dry-run listing).
