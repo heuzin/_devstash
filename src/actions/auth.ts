@@ -1,11 +1,15 @@
 "use server";
 
+import bcryptjs from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createVerificationToken } from "@/lib/auth/verification-token";
+import { createPasswordResetToken, consumePasswordResetToken } from "@/lib/auth/password-reset-token";
 import { sendVerificationEmail } from "@/lib/email/send-verification-email";
+import { sendPasswordResetEmail } from "@/lib/email/send-password-reset-email";
 import { getSiteUrl } from "@/lib/site-url";
 import { isEmailVerificationEnabled } from "@/lib/email-verification";
+import { forgotPasswordSchema, resetPasswordSchema } from "@/lib/validations/auth";
 
 interface ActionResult {
   success: boolean;
@@ -40,6 +44,61 @@ export async function resendVerificationEmail(): Promise<ActionResult> {
   } catch (error) {
     console.error("Failed to resend verification email:", error);
     return { success: false, error: "Could not send verification email. Please try again." };
+  }
+
+  return { success: true };
+}
+
+const GENERIC_RESET_MESSAGE =
+  "If an account with that email exists, we've sent a password reset link.";
+
+export async function requestPasswordReset(
+  email: string,
+): Promise<{ success: boolean; message: string }> {
+  const parsed = forgotPasswordSchema.safeParse({ email });
+  if (!parsed.success) {
+    return { success: false, message: parsed.error.issues[0]?.message ?? "Invalid email" };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: parsed.data.email },
+    select: { email: true, name: true, password: true },
+  });
+
+  if (user?.password) {
+    try {
+      const token = await createPasswordResetToken(user.email);
+      const resetUrl = new URL(`/reset-password?token=${token}`, await getSiteUrl()).toString();
+      await sendPasswordResetEmail({ to: user.email, name: user.name ?? "there", resetUrl });
+    } catch (error) {
+      console.error("Failed to send password reset email:", error);
+    }
+  }
+
+  return { success: true, message: GENERIC_RESET_MESSAGE };
+}
+
+export async function resetPassword(
+  token: string,
+  password: string,
+  confirmPassword: string,
+): Promise<ActionResult> {
+  const parsed = resetPasswordSchema.safeParse({ password, confirmPassword });
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const passwordHash = await bcryptjs.hash(parsed.data.password, 12);
+  const result = await consumePasswordResetToken(token, passwordHash);
+
+  if (!result.success) {
+    return {
+      success: false,
+      error:
+        result.error === "expired"
+          ? "This reset link has expired"
+          : "This reset link is invalid",
+    };
   }
 
   return { success: true };
