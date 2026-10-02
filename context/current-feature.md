@@ -1,51 +1,18 @@
-# Current Feature: Rate Limiting for Auth
+# Current Feature
 
 <!-- Feature name and short description -->
 
-Implement rate limiting on authentication endpoints to prevent brute force attacks, credential stuffing, and abuse of email-sending endpoints.
-
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
 <!-- Bullet points of what success looks like -->
 
-- Add rate limiting to auth-related API routes
-- Use Upstash Redis with `@upstash/ratelimit` for serverless-compatible limiting
-- Create a reusable rate limiting utility (`src/lib/rate-limit.ts`)
-- Return 429 Too Many Requests with appropriate error responses (`Retry-After` header, JSON `{ error }`)
-- Display user-friendly error messages on the frontend via toast
-
 ## Notes
 
 <!-- Additional context, constraints, or details from spec -->
-
-**Endpoints to protect:**
-
-| Endpoint | Limit | Window | Key By |
-|----------|-------|--------|--------|
-| `/api/auth/callback/credentials` (login) | 5 attempts | 15 min | IP + email |
-| `/api/auth/register` | 3 attempts | 1 hour | IP |
-| `/api/auth/forgot-password` | 3 attempts | 1 hour | IP |
-| `/api/auth/reset-password` | 5 attempts | 15 min | IP |
-| `/api/auth/resend-verification` | 3 attempts | 15 min | IP + email |
-
-**Implementation:**
-
-- Use Upstash sliding window algorithm for smooth limiting
-- Extract IP from `x-forwarded-for` header (Vercel) or request
-- Combine IP + identifier (email) where applicable for tighter limits
-- Return `{ success, remaining, reset }` from rate limit checks
-- Env vars: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
-
-**Caveats:**
-
-- Upstash free tier allows 10k requests/day (sufficient for auth limiting)
-- Rate limiting should fail open (allow request) if Upstash is unavailable
-- Login limiting is tricky with NextAuth credentials — may need a custom sign-in handler, since `/api/auth/callback/credentials` is handled internally by NextAuth
-- Consider rate limiting middleware for a cleaner implementation later
 
 ## History
 
@@ -69,3 +36,4 @@ In Progress
 - Email Verification Toggle: added `EMAIL_VERIFICATION_ENABLED` (`src/lib/email-verification.ts`, `isEmailVerificationEnabled()`), following the same env-var-plus-helper pattern documented for `ENFORCE_PLAN_LIMITS`; defaults to enabled when unset, set to `"false"` to disable. When disabled, `POST /api/auth/register` skips creating a verification token and sending the Resend email, and stamps the new user's `emailVerified` immediately (so re-enabling the flag later doesn't retroactively flag pre-existing accounts as unverified or surface the banner for them); the dashboard `VerifyEmailBanner` is hidden regardless of a user's verified state; and the `resendVerificationEmail` action short-circuits with a friendly error instead of attempting to send. `GET /verify-email` is untouched and still consumes old tokens directly if hit, just unreachable from the UI when disabled. No migration needed since `User.emailVerified` already existed. Verified the flag helper directly across `unset`/`"true"`/`"false"`/wrong-case inputs and the register-route stamping behavior for both states against the dev DB.
 - Forgot Password: added a "Forgot password?" link on `/sign-in` leading to `/forgot-password`, which always returns a generic success message via a new `requestPasswordReset` Server Action, regardless of whether the email exists or belongs to a GitHub-only account, to avoid user enumeration; an email is sent via Resend (`src/lib/email/send-password-reset-email.ts`) only when the account has a password set. Reuses the existing `VerificationToken` model for storage, scoped with a `reset-password:` identifier prefix so reset tokens can't be confused with email-verification tokens for the same address (`src/lib/auth/password-reset-token.ts`, `createPasswordResetToken`/`consumePasswordResetToken`, mirroring the existing verification-token lib's 24h TTL and single-use pattern). `/reset-password?token=...` (`src/app/(auth)/reset-password/page.tsx`) lets the user set a new password (zod-validated, bcrypt-hashed at 12 rounds via a new `resetPassword` Server Action), showing distinct invalid/expired states and redirecting to `/sign-in` with a toast on success. Verified end-to-end with Playwright against the dev DB (forgot-password generic message, token created with the scoped identifier, invalid-token rejection, valid-token reset, sign-in with the new password, token deleted after use) and restored the demo user's seeded password afterward.
 - Profile Page: added `/profile` (already proxy-protected) showing account info (avatar via existing `UserAvatar`, name, email, join date from `User.createdAt`), usage stats (total items/collections via existing `getItemStats`/`getCollectionStats`, plus a per-type breakdown via existing `getItemTypesWithCounts` and `ITEM_TYPE_ICONS`), a change-password form, and a delete-account flow; extended `getCurrentUser` (`src/lib/db/user.ts`) with `hasPassword` and `createdAt` so the change-password card only renders for credentials users (hidden for GitHub-only accounts); added `changePasswordSchema` to `src/lib/validations/auth.ts` and a new `src/actions/profile.ts` with `changePassword` (bcrypt-verifies the current password before hashing and saving the new one at 12 rounds) and `deleteAccount` (deletes the `User` row, relying on existing `onDelete: Cascade` relations to remove items/collections/accounts/sessions, then calls NextAuth's `signOut` to redirect to `/`) Server Actions; added `src/components/profile/change-password-form.tsx` (mirrors the existing `ResetPasswordForm` pattern) and `src/components/profile/delete-account-dialog.tsx` (shadcn `alert-dialog`, added via the CLI along with `separator`). Verified end-to-end with Playwright against the dev DB: wrong-current-password rejection, successful password change plus re-sign-in with the new password (then restored the demo user's seeded password), and full account deletion on a disposable test account (confirmed session cleared, `/profile` redirects to sign-in, and the user row no longer exists via `scripts/delete-non-demo-users.ts`'s dry-run listing).
+- Rate Limiting for Auth: added Upstash-backed sliding-window rate limiting (`@upstash/ratelimit`, `@upstash/redis`) to prevent brute force, credential stuffing, and auth-email abuse; new `src/lib/rate-limit.ts` utility (`checkRateLimit`, `getClientIp`, `rateLimitMessage`/`retryAfterSeconds`, 5 preconfigured limiters) fails open if Upstash is unconfigured or unreachable. Applied to login (5/15min, IP+email, via a `RateLimitedSignin` error thrown from the credentials `authorize()` in `src/auth.ts` since NextAuth handles the callback route internally), register (3/hr, IP, in `src/app/api/auth/register/route.ts`, returns 429 + `Retry-After`), and — since forgot-password, reset-password, and resend-verification are Server Actions here rather than API routes as the spec assumed — `requestPasswordReset`/`resetPassword`/`resendVerificationEmail` in `src/actions/auth.ts` (3/hr IP, 5/15min IP, 3/15min IP+email respectively). Sign-in form shows a dedicated "Too many login attempts" message via a custom `rate_limited` NextAuth error code; register form surfaces 429s via toast; the other three already had error/message display wired up. Verified end-to-end with curl and Playwright against the real dev Upstash instance (register 3-ok-then-429 with `Retry-After`, login 5-bad-then-rate_limited, forgot-password 3-ok-then-rate-limited-message) and cleaned up the disposable test accounts created during testing afterward.
