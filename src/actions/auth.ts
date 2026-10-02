@@ -1,7 +1,7 @@
 "use server";
 
 import bcryptjs from "bcryptjs";
-import { auth } from "@/auth";
+import { auth, signIn } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createVerificationToken } from "@/lib/auth/verification-token";
 import { createPasswordResetToken, consumePasswordResetToken } from "@/lib/auth/password-reset-token";
@@ -22,6 +22,10 @@ import {
 interface ActionResult {
   success: boolean;
   error?: string;
+}
+
+export async function signInWithGitHub(): Promise<void> {
+  await signIn("github", { redirectTo: "/dashboard" });
 }
 
 export async function resendVerificationEmail(): Promise<ActionResult> {
