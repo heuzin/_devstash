@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GithubIcon } from "@/components/icons/github-icon";
 import { signInSchema } from "@/lib/validations/auth";
+import { signInWithGitHub } from "@/actions/auth";
 
 type FieldErrors = Partial<Record<"email" | "password", string>>;
 
@@ -24,7 +25,6 @@ export function SignInForm() {
     searchParams.get("error") ? "Something went wrong signing in with GitHub. Please try again." : null,
   );
   const [isCredentialsSubmitting, setIsCredentialsSubmitting] = useState(false);
-  const [isGithubSubmitting, setIsGithubSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -63,11 +63,6 @@ export function SignInForm() {
 
     router.push(callbackUrl);
     router.refresh();
-  }
-
-  function handleGithubSignIn() {
-    setIsGithubSubmitting(true);
-    signIn("github", { callbackUrl });
   }
 
   return (
@@ -121,16 +116,12 @@ export function SignInForm() {
         <span className="relative bg-card px-2">or</span>
       </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        disabled={isGithubSubmitting}
-        onClick={handleGithubSignIn}
-      >
-        <GithubIcon className="size-4" />
-        Sign in with GitHub
-      </Button>
+      <form action={signInWithGitHub}>
+        <Button type="submit" variant="outline" className="w-full">
+          <GithubIcon className="size-4" />
+          Sign in with GitHub
+        </Button>
+      </form>
 
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
