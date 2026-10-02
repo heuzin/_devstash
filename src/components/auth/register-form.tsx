@@ -49,7 +49,12 @@ export function RegisterForm() {
     setIsSubmitting(false);
 
     if (!response.ok || !body.success) {
-      setFormError(body.error ?? "Something went wrong. Please try again.");
+      const message = body.error ?? "Something went wrong. Please try again.";
+      if (response.status === 429) {
+        toast.error(message, { richColors: true });
+        return;
+      }
+      setFormError(message);
       return;
     }
 

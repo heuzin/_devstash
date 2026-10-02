@@ -52,7 +52,12 @@ export function SignInForm() {
     setIsCredentialsSubmitting(false);
 
     if (result?.error) {
-      setFormError("Invalid email or password");
+      const code = (result as { code?: string }).code;
+      setFormError(
+        code === "rate_limited"
+          ? "Too many login attempts. Please try again later."
+          : "Invalid email or password",
+      );
       return;
     }
 

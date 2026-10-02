@@ -10,6 +10,14 @@ import { sendPasswordResetEmail } from "@/lib/email/send-password-reset-email";
 import { getSiteUrl } from "@/lib/site-url";
 import { isEmailVerificationEnabled } from "@/lib/email-verification";
 import { forgotPasswordSchema, resetPasswordSchema } from "@/lib/validations/auth";
+import {
+  checkRateLimit,
+  forgotPasswordRateLimit,
+  getClientIp,
+  rateLimitMessage,
+  resendVerificationRateLimit,
+  resetPasswordRateLimit,
+} from "@/lib/rate-limit";
 
 interface ActionResult {
   success: boolean;
@@ -37,6 +45,12 @@ export async function resendVerificationEmail(): Promise<ActionResult> {
     return { success: false, error: "Your email is already verified" };
   }
 
+  const ip = await getClientIp();
+  const rateLimit = await checkRateLimit(resendVerificationRateLimit, `${ip}:${user.email}`);
+  if (!rateLimit.success) {
+    return { success: false, error: rateLimitMessage(rateLimit.reset) };
+  }
+
   try {
     const token = await createVerificationToken(user.email);
     const verifyUrl = new URL(`/verify-email?token=${token}`, await getSiteUrl()).toString();
@@ -58,6 +72,12 @@ export async function requestPasswordReset(
   const parsed = forgotPasswordSchema.safeParse({ email });
   if (!parsed.success) {
     return { success: false, message: parsed.error.issues[0]?.message ?? "Invalid email" };
+  }
+
+  const ip = await getClientIp();
+  const rateLimit = await checkRateLimit(forgotPasswordRateLimit, ip);
+  if (!rateLimit.success) {
+    return { success: false, message: rateLimitMessage(rateLimit.reset) };
   }
 
   const user = await prisma.user.findUnique({
@@ -86,6 +106,12 @@ export async function resetPassword(
   const parsed = resetPasswordSchema.safeParse({ password, confirmPassword });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const ip = await getClientIp();
+  const rateLimit = await checkRateLimit(resetPasswordRateLimit, ip);
+  if (!rateLimit.success) {
+    return { success: false, error: rateLimitMessage(rateLimit.reset) };
   }
 
   const passwordHash = await bcryptjs.hash(parsed.data.password, 12);
