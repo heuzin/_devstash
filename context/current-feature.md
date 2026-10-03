@@ -1,18 +1,27 @@
-# Current Feature
+# Current Feature: Items List View
 
-<!-- Feature name and short description -->
+Dynamic items listing page at `/items/[type]` that displays type-filtered items.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Create dynamic route `/items/[type]` (e.g., `/items/snippets`, `/items/notes`)
+- Fetch and display items filtered by type
+- Responsive grid of `ItemCard` components
+- Two columns on medium screens and up
+- Each card has a left border colored by item type
+- Follow existing codebase patterns
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Spec source: `context/features/item-list-view-spec.md`
+- `ItemType.slug` (e.g., `snippets`, `prompts`) is what the `[type]` route param maps to — already seeded per `SYSTEM_ITEM_TYPES` in `prisma/seed.ts`
+- Item type colors are already used elsewhere (sidebar dots, collection accents) via `src/lib/db` helpers — reuse the same source of truth for the card border color rather than hardcoding per type
+- No file/type specified for where `ItemCard` should live if it doesn't already exist; check `src/components/` for an existing item card component before creating a new one
+- Moved `/dashboard`, `/items/[type]`, and `/profile` into a shared `src/app/(app)/layout.tsx` route group (same pattern as the existing `(auth)` group) so all three share the sidebar/header chrome from `DashboardChrome`, per explicit request to keep the dashboard's structure consistent across pages; URLs are unchanged since route groups don't affect paths, and `/items/[type]`/`/profile` dropped their standalone "Back to dashboard" links and padding wrappers since the shared layout's `<main>` already provides `p-6`
 
 ## History
 

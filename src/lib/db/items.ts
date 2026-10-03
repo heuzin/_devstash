@@ -70,6 +70,44 @@ export async function getDashboardItems(
   };
 }
 
+export interface ItemsByType {
+  itemType: {
+    id: string;
+    name: string;
+    slug: string;
+    icon: string;
+    color: string;
+  };
+  items: ItemSummary[];
+}
+
+export async function getItemsByTypeSlug(slug: string): Promise<ItemsByType | null> {
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+
+  const itemType = await prisma.itemType.findFirst({
+    where: { slug, isSystem: true },
+  });
+  if (!itemType) return null;
+
+  const items = await prisma.item.findMany({
+    where: { userId, itemTypeId: itemType.id },
+    orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
+    include: { itemType: true, tags: true },
+  });
+
+  return {
+    itemType: {
+      id: itemType.id,
+      name: itemType.name,
+      slug: itemType.slug,
+      icon: itemType.icon,
+      color: itemType.color,
+    },
+    items: items.map(toItemSummary),
+  };
+}
+
 export interface ItemStats {
   total: number;
   favorites: number;
