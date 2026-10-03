@@ -1,27 +1,18 @@
-# Current Feature: Items List View
+# Current Feature
 
-Dynamic items listing page at `/items/[type]` that displays type-filtered items.
+<!-- Feature name and short description -->
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Create dynamic route `/items/[type]` (e.g., `/items/snippets`, `/items/notes`)
-- Fetch and display items filtered by type
-- Responsive grid of `ItemCard` components
-- Two columns on medium screens and up
-- Each card has a left border colored by item type
-- Follow existing codebase patterns
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- Spec source: `context/features/item-list-view-spec.md`
-- `ItemType.slug` (e.g., `snippets`, `prompts`) is what the `[type]` route param maps to — already seeded per `SYSTEM_ITEM_TYPES` in `prisma/seed.ts`
-- Item type colors are already used elsewhere (sidebar dots, collection accents) via `src/lib/db` helpers — reuse the same source of truth for the card border color rather than hardcoding per type
-- No file/type specified for where `ItemCard` should live if it doesn't already exist; check `src/components/` for an existing item card component before creating a new one
-- Moved `/dashboard`, `/items/[type]`, and `/profile` into a shared `src/app/(app)/layout.tsx` route group (same pattern as the existing `(auth)` group) so all three share the sidebar/header chrome from `DashboardChrome`, per explicit request to keep the dashboard's structure consistent across pages; URLs are unchanged since route groups don't affect paths, and `/items/[type]`/`/profile` dropped their standalone "Back to dashboard" links and padding wrappers since the shared layout's `<main>` already provides `p-6`
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -47,3 +38,4 @@ In Progress
 - Profile Page: added `/profile` (already proxy-protected) showing account info (avatar via existing `UserAvatar`, name, email, join date from `User.createdAt`), usage stats (total items/collections via existing `getItemStats`/`getCollectionStats`, plus a per-type breakdown via existing `getItemTypesWithCounts` and `ITEM_TYPE_ICONS`), a change-password form, and a delete-account flow; extended `getCurrentUser` (`src/lib/db/user.ts`) with `hasPassword` and `createdAt` so the change-password card only renders for credentials users (hidden for GitHub-only accounts); added `changePasswordSchema` to `src/lib/validations/auth.ts` and a new `src/actions/profile.ts` with `changePassword` (bcrypt-verifies the current password before hashing and saving the new one at 12 rounds) and `deleteAccount` (deletes the `User` row, relying on existing `onDelete: Cascade` relations to remove items/collections/accounts/sessions, then calls NextAuth's `signOut` to redirect to `/`) Server Actions; added `src/components/profile/change-password-form.tsx` (mirrors the existing `ResetPasswordForm` pattern) and `src/components/profile/delete-account-dialog.tsx` (shadcn `alert-dialog`, added via the CLI along with `separator`). Verified end-to-end with Playwright against the dev DB: wrong-current-password rejection, successful password change plus re-sign-in with the new password (then restored the demo user's seeded password), and full account deletion on a disposable test account (confirmed session cleared, `/profile` redirects to sign-in, and the user row no longer exists via `scripts/delete-non-demo-users.ts`'s dry-run listing).
 - Rate Limiting for Auth: added Upstash-backed sliding-window rate limiting (`@upstash/ratelimit`, `@upstash/redis`) to prevent brute force, credential stuffing, and auth-email abuse; new `src/lib/rate-limit.ts` utility (`checkRateLimit`, `getClientIp`, `rateLimitMessage`/`retryAfterSeconds`, 5 preconfigured limiters) fails open if Upstash is unconfigured or unreachable. Applied to login (5/15min, IP+email, via a `RateLimitedSignin` error thrown from the credentials `authorize()` in `src/auth.ts` since NextAuth handles the callback route internally), register (3/hr, IP, in `src/app/api/auth/register/route.ts`, returns 429 + `Retry-After`), and — since forgot-password, reset-password, and resend-verification are Server Actions here rather than API routes as the spec assumed — `requestPasswordReset`/`resetPassword`/`resendVerificationEmail` in `src/actions/auth.ts` (3/hr IP, 5/15min IP, 3/15min IP+email respectively). Sign-in form shows a dedicated "Too many login attempts" message via a custom `rate_limited` NextAuth error code; register form surfaces 429s via toast; the other three already had error/message display wired up. Verified end-to-end with curl and Playwright against the real dev Upstash instance (register 3-ok-then-429 with `Retry-After`, login 5-bad-then-rate_limited, forgot-password 3-ok-then-rate-limited-message) and cleaned up the disposable test accounts created during testing afterward.
 - Fix GitHub OAuth Redirect Issue: replaced the unreliable client-side `signIn` from `next-auth/react` on the GitHub button with a server-side `signIn("github", { redirectTo: "/dashboard" })` call in a new `signInWithGitHub` Server Action (`src/actions/auth.ts`), which was causing GitHub sign-in to need two clicks (first authenticated but bounced back to `/sign-in`, second actually landed on `/dashboard`). `src/components/auth/sign-in-form.tsx`'s GitHub button is now a `<form action={signInWithGitHub}>` instead of an `onClick` handler, dropping the now-unneeded `isGithubSubmitting` state/`handleGithubSignIn` function; credentials login (`redirect: false`) was untouched. Verified `npm run build`/`npm run lint` pass and, via Playwright, that clicking the button now redirects straight to GitHub's OAuth authorize page through the server action with no client-side errors; the full post-approval round-trip to `/dashboard` wasn't re-verified end-to-end since no test GitHub credentials were available in this environment.
+- Items List View: added a dynamic `/items/[type]` route (`getItemsByTypeSlug` in `src/lib/db/items.ts`) that fetches a user's items filtered by `ItemType.slug` and renders them in a responsive two-column grid (`ItemGrid`/`ItemCard` in `src/components/items/`), each card showing its icon, title, pin/favorite state, description, tags, and a left border colored by the item type, reusing the existing `ITEM_TYPE_ICONS` and `src/lib/db` color source of truth; sorts pinned items first then by `updatedAt`, and shows a "No items yet." empty state. Moved `/dashboard`, `/items/[type]`, and `/profile` into a shared `src/app/(app)/layout.tsx` route group (mirroring the existing `(auth)` group) so all three share the sidebar/header chrome from `DashboardChrome`, dropping their standalone "Back to dashboard" links and padding wrappers since the shared layout's `<main>` already provides `p-6`; `src/proxy.ts` now also protects `/items/:path*`. Verified `npm run build`/`npm run lint` pass and, via Playwright against the dev DB, that snippets/links render with correct type-colored borders and descriptions, notes (0 items) shows the empty state, and an unknown type slug 404s.
