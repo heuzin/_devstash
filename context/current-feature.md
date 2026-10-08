@@ -1,25 +1,18 @@
-# Current Feature: Item Drawer
+# Current Feature
 
-Right-side slide-in drawer (shadcn `Sheet`) that opens when clicking an item card — the item detail view, with no separate item page.
+<!-- Feature name and short description -->
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Clicking an `ItemCard` opens a right-side `Sheet` drawer with that item's full data, on both the dashboard and items list pages
-- Action bar in the drawer: Favorite (star, yellow when active), Pin, Copy, Edit (pencil), Delete (trash, right-aligned) — per `context/screenshots/dashboard-ui-drawer.png`
-- Drawer fetches full item detail on click (no page navigation) and shows a skeleton/loading state while fetching
-- Feels snappy — client wrapper component manages drawer state since the pages themselves are server components
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- Card data (title, description, tags, etc.) is still fetched server-side as before — unchanged
-- Full item detail (content, collections, language, etc.) is fetched client-side on click via a new `GET /api/items/[id]` route
-- New query function for full item detail lives in `lib/db/items.ts`; the API route calls it with an auth/ownership check
-- Scope for this pass is the drawer's details display only — code editor and other item-type-specific extras come later
-- Reference screenshot: `context/screenshots/dashboard-ui-drawer.png`
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -48,4 +41,4 @@ In Progress
 - Items List View: added a dynamic `/items/[type]` route (`getItemsByTypeSlug` in `src/lib/db/items.ts`) that fetches a user's items filtered by `ItemType.slug` and renders them in a responsive two-column grid (`ItemGrid`/`ItemCard` in `src/components/items/`), each card showing its icon, title, pin/favorite state, description, tags, and a left border colored by the item type, reusing the existing `ITEM_TYPE_ICONS` and `src/lib/db` color source of truth; sorts pinned items first then by `updatedAt`, and shows a "No items yet." empty state. Moved `/dashboard`, `/items/[type]`, and `/profile` into a shared `src/app/(app)/layout.tsx` route group (mirroring the existing `(auth)` group) so all three share the sidebar/header chrome from `DashboardChrome`, dropping their standalone "Back to dashboard" links and padding wrappers since the shared layout's `<main>` already provides `p-6`; `src/proxy.ts` now also protects `/items/:path*`. Verified `npm run build`/`npm run lint` pass and, via Playwright against the dev DB, that snippets/links render with correct type-colored borders and descriptions, notes (0 items) shows the empty state, and an unknown type slug 404s.
 - Vitest Setup: installed Vitest 4 with `vite-tsconfig-paths` (resolves the `@/*` alias the same way `tsconfig.json` does) and `vitest-mock-extended`; added `vitest.config.mts` (node environment, `src/**/*.test.ts`), `npm run test`/`npm run test:watch`. Established the mocking pattern used by all future server-action tests: `src/lib/__mocks__/prisma.ts` auto-mocks `@/lib/prisma` via `vitest-mock-extended`'s `mockDeep`, with a typed `prismaMock` re-export from `src/lib/prisma-mock.ts`; `@/auth` is mocked per-test with an explicit `vi.mock` factory. Added example tests covering a pure utility/validation module (`src/lib/validations/auth.test.ts`), an env-flag helper (`src/lib/email-verification.test.ts`), a fail-open utility (`src/lib/rate-limit.test.ts`), and a server action exercising the Prisma/auth mocks end-to-end (`src/actions/profile.test.ts`) — 26 tests total. Documented the testing convention (scope, colocation, mocking pattern, what to test vs. not) in a new Testing section in `context/coding-standards.md`, and updated step 4 of the workflow in `context/ai-interaction.md` from "Implement unit testing later" to running `npm run test` for server action/utility changes. Verified `npm run test`, `npm run lint`, and `npm run build` all pass.
 - Three-Column Item Grid: changed `ItemGrid` (`src/components/items/item-grid.tsx`) from `grid-cols-1 md:grid-cols-2` to `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`, a layout-only change with no edits to `ItemCard`, data fetching, sorting, or the empty state. Verified via Playwright at 1440px (3 cols), 768px (2 cols), and 390px (1 col) that the grid itself has no horizontal overflow at any width (a pre-existing, unrelated overflow in the page header at mobile widths was noted but left out of scope); `npm run lint` and `npm run build` passed, and the existing 26-test suite still passed (no server actions/utilities touched, so no new tests were needed).
-</content>
+- Item Drawer: clicking an `ItemCard` now opens a right-side shadcn `Sheet` drawer with the item's full detail instead of doing nothing — fetched on click via a new `GET /api/items/[id]` route (`getItemDetail` in `src/lib/db/items.ts`, auth/ownership-checked in the route) rather than navigating to a separate page. Added `src/components/items/item-drawer-provider.tsx` (`ItemDrawerProvider`/`useItemDrawer` context, holding open/loading/error/item state) wired into `src/app/(app)/layout.tsx` so the dashboard and `/items/[type]` pages share one drawer; `ItemCard` and `ItemList` became client components that open it on click (mouse + keyboard). `src/components/items/item-drawer.tsx` renders a skeleton while loading, an error message on failure, then header (icon, title, type/language badges), a display-only action bar (Favorite/Pin/Copy/Edit/Delete — functionality deferred to a later pass), Description, Content (text/URL/file variants), Tags, Collections, and Created/Updated dates; added the shadcn `Skeleton` component. Verified `npm run lint`, `npm run build`, and `npm run test` (26/26, no new tests needed — `getItemDetail` is a thin query function like the already-untested `getDashboardItems`/`getItemsByTypeSlug`, and the API route/client components are out of the project's unit-testing scope) all pass, and via Playwright against the dev DB that a Link item (URL, description, collections) and a Snippet item (code content, language badge, tags) both render correctly in the drawer from both the dashboard and `/items/snippets`, including open/close behavior. Also diagnosed a reported "drawer opens slowly" concern: measured end-to-end via Playwright resource timing and confirmed it was Next.js dev-mode's one-time Turbopack compile of the new route on first hit (~1.3s) — subsequent clicks were 100–480ms; not a bug and not present in production builds.
