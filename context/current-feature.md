@@ -1,6 +1,6 @@
-# Current Feature
+# Current Feature: Three-Column Item Grid
 
-<!-- Feature name and short description -->
+Change the `/items/[type]` listing grid from two columns to three columns on larger screens, while staying responsive on smaller ones.
 
 ## Status
 
@@ -8,11 +8,15 @@ Not Started
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- `ItemGrid` (`src/components/items/item-grid.tsx`) shows 3 columns on large screens instead of the current 2
+- Grid stays responsive: fewer columns on narrower viewports, no horizontal overflow, cards remain readable at every breakpoint
+- No change to `ItemCard` content/structure, data fetching, sorting, or the empty state — this is a layout-only change
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Current grid is `grid grid-cols-1 gap-4 md:grid-cols-2` in `src/components/items/item-grid.tsx`
+- Likely becomes something like `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3` (or similar breakpoint tuning) — exact breakpoints to be decided during implementation and checked visually
+- Verify in the browser at a few widths (mobile, tablet, desktop) per the project's UI testing rule
 
 ## History
 
@@ -39,3 +43,5 @@ Not Started
 - Rate Limiting for Auth: added Upstash-backed sliding-window rate limiting (`@upstash/ratelimit`, `@upstash/redis`) to prevent brute force, credential stuffing, and auth-email abuse; new `src/lib/rate-limit.ts` utility (`checkRateLimit`, `getClientIp`, `rateLimitMessage`/`retryAfterSeconds`, 5 preconfigured limiters) fails open if Upstash is unconfigured or unreachable. Applied to login (5/15min, IP+email, via a `RateLimitedSignin` error thrown from the credentials `authorize()` in `src/auth.ts` since NextAuth handles the callback route internally), register (3/hr, IP, in `src/app/api/auth/register/route.ts`, returns 429 + `Retry-After`), and — since forgot-password, reset-password, and resend-verification are Server Actions here rather than API routes as the spec assumed — `requestPasswordReset`/`resetPassword`/`resendVerificationEmail` in `src/actions/auth.ts` (3/hr IP, 5/15min IP, 3/15min IP+email respectively). Sign-in form shows a dedicated "Too many login attempts" message via a custom `rate_limited` NextAuth error code; register form surfaces 429s via toast; the other three already had error/message display wired up. Verified end-to-end with curl and Playwright against the real dev Upstash instance (register 3-ok-then-429 with `Retry-After`, login 5-bad-then-rate_limited, forgot-password 3-ok-then-rate-limited-message) and cleaned up the disposable test accounts created during testing afterward.
 - Fix GitHub OAuth Redirect Issue: replaced the unreliable client-side `signIn` from `next-auth/react` on the GitHub button with a server-side `signIn("github", { redirectTo: "/dashboard" })` call in a new `signInWithGitHub` Server Action (`src/actions/auth.ts`), which was causing GitHub sign-in to need two clicks (first authenticated but bounced back to `/sign-in`, second actually landed on `/dashboard`). `src/components/auth/sign-in-form.tsx`'s GitHub button is now a `<form action={signInWithGitHub}>` instead of an `onClick` handler, dropping the now-unneeded `isGithubSubmitting` state/`handleGithubSignIn` function; credentials login (`redirect: false`) was untouched. Verified `npm run build`/`npm run lint` pass and, via Playwright, that clicking the button now redirects straight to GitHub's OAuth authorize page through the server action with no client-side errors; the full post-approval round-trip to `/dashboard` wasn't re-verified end-to-end since no test GitHub credentials were available in this environment.
 - Items List View: added a dynamic `/items/[type]` route (`getItemsByTypeSlug` in `src/lib/db/items.ts`) that fetches a user's items filtered by `ItemType.slug` and renders them in a responsive two-column grid (`ItemGrid`/`ItemCard` in `src/components/items/`), each card showing its icon, title, pin/favorite state, description, tags, and a left border colored by the item type, reusing the existing `ITEM_TYPE_ICONS` and `src/lib/db` color source of truth; sorts pinned items first then by `updatedAt`, and shows a "No items yet." empty state. Moved `/dashboard`, `/items/[type]`, and `/profile` into a shared `src/app/(app)/layout.tsx` route group (mirroring the existing `(auth)` group) so all three share the sidebar/header chrome from `DashboardChrome`, dropping their standalone "Back to dashboard" links and padding wrappers since the shared layout's `<main>` already provides `p-6`; `src/proxy.ts` now also protects `/items/:path*`. Verified `npm run build`/`npm run lint` pass and, via Playwright against the dev DB, that snippets/links render with correct type-colored borders and descriptions, notes (0 items) shows the empty state, and an unknown type slug 404s.
+- Vitest Setup: installed Vitest 4 with `vite-tsconfig-paths` (resolves the `@/*` alias the same way `tsconfig.json` does) and `vitest-mock-extended`; added `vitest.config.mts` (node environment, `src/**/*.test.ts`), `npm run test`/`npm run test:watch`. Established the mocking pattern used by all future server-action tests: `src/lib/__mocks__/prisma.ts` auto-mocks `@/lib/prisma` via `vitest-mock-extended`'s `mockDeep`, with a typed `prismaMock` re-export from `src/lib/prisma-mock.ts`; `@/auth` is mocked per-test with an explicit `vi.mock` factory. Added example tests covering a pure utility/validation module (`src/lib/validations/auth.test.ts`), an env-flag helper (`src/lib/email-verification.test.ts`), a fail-open utility (`src/lib/rate-limit.test.ts`), and a server action exercising the Prisma/auth mocks end-to-end (`src/actions/profile.test.ts`) — 26 tests total. Documented the testing convention (scope, colocation, mocking pattern, what to test vs. not) in a new Testing section in `context/coding-standards.md`, and updated step 4 of the workflow in `context/ai-interaction.md` from "Implement unit testing later" to running `npm run test` for server action/utility changes. Verified `npm run test`, `npm run lint`, and `npm run build` all pass.
+</content>

@@ -90,6 +90,22 @@ Example v4 configuration:
 - Return `{ success, data, error }` pattern from actions
 - Display user-friendly error messages via toast
 
+## Testing
+
+- Scope is **server actions (`src/actions/*`) and utilities (`src/lib/*`) only** — no component
+  testing (no jsdom/Testing Library)
+- Test files are colocated next to their source as `*.test.ts` (e.g. `src/actions/profile.ts` →
+  `src/actions/profile.test.ts`)
+- Mock `@/lib/prisma` with `vi.mock("@/lib/prisma")` (auto-mocked via `src/lib/__mocks__/prisma.ts`)
+  and import the typed mock from `@/lib/prisma-mock`; reset it with `mockReset` in `beforeEach`
+- Mock `@/auth` with an explicit `vi.mock("@/auth", () => ({ ... }))` factory for the exports used
+  (`auth`, `signOut`, etc.)
+- Never let a test hit the real Neon database or an external service (Resend, Upstash) — mock them
+- Do test: validation schemas, branching logic, error paths, and server actions' auth/ownership
+  checks
+- Don't test: framework internals, UI rendering, or trivial pass-through code
+- Run `npm run test` (or `npm run test:watch` while iterating)
+
 ## Code Quality
 
 - No commented-out code unless specified
