@@ -1,6 +1,9 @@
+"use client";
+
 import { Pin, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { useItemDrawer } from "@/components/items/item-drawer-provider";
 import type { ItemSummary } from "@/lib/db/items";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
 
@@ -10,10 +13,20 @@ function formatDate(date: Date) {
 
 export function ItemCard({ item }: { item: ItemSummary }) {
   const Icon = ITEM_TYPE_ICONS[item.itemType.icon];
+  const { openItem } = useItemDrawer();
 
   return (
     <Card
-      className="h-full border-l-4 transition-colors hover:bg-accent/50"
+      role="button"
+      tabIndex={0}
+      onClick={() => openItem(item.id)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openItem(item.id);
+        }
+      }}
+      className="h-full cursor-pointer border-l-4 transition-colors hover:bg-accent/50"
       style={{ borderLeftColor: item.itemType.color }}
     >
       <CardContent className="space-y-2">

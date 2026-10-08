@@ -1,5 +1,8 @@
+"use client";
+
 import { Pin, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useItemDrawer } from "@/components/items/item-drawer-provider";
 import type { ItemSummary } from "@/lib/db/items";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
 
@@ -8,6 +11,8 @@ function formatDate(date: Date) {
 }
 
 export function ItemList({ items }: { items: ItemSummary[] }) {
+  const { openItem } = useItemDrawer();
+
   return (
     <ul className="space-y-2">
       {items.map((item) => {
@@ -16,7 +21,16 @@ export function ItemList({ items }: { items: ItemSummary[] }) {
         return (
           <li
             key={item.id}
-            className="flex items-center gap-3 rounded-lg border-l-4 bg-card p-3"
+            role="button"
+            tabIndex={0}
+            onClick={() => openItem(item.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openItem(item.id);
+              }
+            }}
+            className="flex cursor-pointer items-center gap-3 rounded-lg border-l-4 bg-card p-3 transition-colors hover:bg-accent/50"
             style={{ borderLeftColor: item.itemType.color }}
           >
             <div

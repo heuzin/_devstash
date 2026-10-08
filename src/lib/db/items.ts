@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/db/user";
+import type { ContentType } from "@/generated/prisma/client";
 
 export interface ItemSummary {
   id: string;
@@ -105,6 +106,76 @@ export async function getItemsByTypeSlug(slug: string): Promise<ItemsByType | nu
       color: itemType.color,
     },
     items: items.map(toItemSummary),
+  };
+}
+
+export interface ItemDetail {
+  id: string;
+  title: string;
+  description: string | null;
+  contentType: ContentType;
+  content: string | null;
+  language: string | null;
+  url: string | null;
+  fileUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  isFavorite: boolean;
+  isPinned: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  tags: string[];
+  itemType: {
+    id: string;
+    name: string;
+    slug: string;
+    icon: string;
+    color: string;
+  };
+  collections: { id: string; name: string }[];
+}
+
+export async function getItemDetail(id: string): Promise<ItemDetail | null> {
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+
+  const item = await prisma.item.findFirst({
+    where: { id, userId },
+    include: {
+      itemType: true,
+      tags: true,
+      collections: { include: { collection: true } },
+    },
+  });
+  if (!item) return null;
+
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    contentType: item.contentType,
+    content: item.content,
+    language: item.language,
+    url: item.url,
+    fileUrl: item.fileUrl,
+    fileName: item.fileName,
+    fileSize: item.fileSize,
+    isFavorite: item.isFavorite,
+    isPinned: item.isPinned,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    tags: item.tags.map((tag) => tag.name),
+    itemType: {
+      id: item.itemType.id,
+      name: item.itemType.name,
+      slug: item.itemType.slug,
+      icon: item.itemType.icon,
+      color: item.itemType.color,
+    },
+    collections: item.collections.map(({ collection }) => ({
+      id: collection.id,
+      name: collection.name,
+    })),
   };
 }
 
