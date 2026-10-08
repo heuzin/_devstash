@@ -4,7 +4,7 @@ Change the `/items/[type]` listing grid from two columns to three columns on lar
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
