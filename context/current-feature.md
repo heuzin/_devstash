@@ -1,26 +1,18 @@
-# Current Feature: Item Delete
+# Current Feature
 
-Delete functionality for items, with a shadcn confirmation dialog and a success toast.
+<!-- Feature name and short description -->
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Clicking the existing (currently inert) Delete button in the item drawer's action bar opens a shadcn confirmation dialog (`AlertDialog`) before anything is deleted
-- Confirming the dialog deletes the item and shows a success toast (Sonner)
-- Canceling the dialog leaves the item untouched and closes the dialog
-- After a successful delete, the item drawer closes and the underlying list/grid (dashboard, `/items/[type]`) no longer shows the deleted item
-- Deletion is a Server Action, auth- and ownership-checked on the server, following the existing `{ success, data, error }` pattern
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- Mirrors the existing `delete-account-dialog.tsx` pattern (shadcn `alert-dialog`, already installed) for the confirmation UI
-- Delete button already exists in `src/components/items/item-drawer.tsx` (`ItemViewBody`, destructive ghost icon button) but has no handler yet
-- Add a `deleteItem` Server Action in `src/actions/items.ts`, backed by a new query function in `src/lib/db/items.ts` (ownership-checked via `findFirst`/`deleteMany`, same pattern as `updateItem`)
-- No new Zod schema needed beyond validating the id is a non-empty string, unless review decides otherwise
-- Add unit tests for the new action (auth/ownership/not-found branches) per `context/coding-standards.md` Testing section
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -51,3 +43,4 @@ In Progress
 - Three-Column Item Grid: changed `ItemGrid` (`src/components/items/item-grid.tsx`) from `grid-cols-1 md:grid-cols-2` to `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`, a layout-only change with no edits to `ItemCard`, data fetching, sorting, or the empty state. Verified via Playwright at 1440px (3 cols), 768px (2 cols), and 390px (1 col) that the grid itself has no horizontal overflow at any width (a pre-existing, unrelated overflow in the page header at mobile widths was noted but left out of scope); `npm run lint` and `npm run build` passed, and the existing 26-test suite still passed (no server actions/utilities touched, so no new tests were needed).
 - Item Drawer: clicking an `ItemCard` now opens a right-side shadcn `Sheet` drawer with the item's full detail instead of doing nothing — fetched on click via a new `GET /api/items/[id]` route (`getItemDetail` in `src/lib/db/items.ts`, auth/ownership-checked in the route) rather than navigating to a separate page. Added `src/components/items/item-drawer-provider.tsx` (`ItemDrawerProvider`/`useItemDrawer` context, holding open/loading/error/item state) wired into `src/app/(app)/layout.tsx` so the dashboard and `/items/[type]` pages share one drawer; `ItemCard` and `ItemList` became client components that open it on click (mouse + keyboard). `src/components/items/item-drawer.tsx` renders a skeleton while loading, an error message on failure, then header (icon, title, type/language badges), a display-only action bar (Favorite/Pin/Copy/Edit/Delete — functionality deferred to a later pass), Description, Content (text/URL/file variants), Tags, Collections, and Created/Updated dates; added the shadcn `Skeleton` component. Verified `npm run lint`, `npm run build`, and `npm run test` (26/26, no new tests needed — `getItemDetail` is a thin query function like the already-untested `getDashboardItems`/`getItemsByTypeSlug`, and the API route/client components are out of the project's unit-testing scope) all pass, and via Playwright against the dev DB that a Link item (URL, description, collections) and a Snippet item (code content, language badge, tags) both render correctly in the drawer from both the dashboard and `/items/snippets`, including open/close behavior. Also diagnosed a reported "drawer opens slowly" concern: measured end-to-end via Playwright resource timing and confirmed it was Next.js dev-mode's one-time Turbopack compile of the new route on first hit (~1.3s) — subsequent clicks were 100–480ms; not a bug and not present in production builds.
 - Item Drawer Edit Mode: clicking Edit in the drawer's action bar now switches the same drawer into inline edit mode instead of doing nothing — Title (required), Description, Tags (comma-separated input, converted to an array on save), and type-specific fields (Content for snippet/prompt/command/note, Language for snippet/command, URL for link) become controlled inputs, while item type, Collections, and Created/Updated dates stay read-only; Save/Cancel replace the action bar, Save is disabled on an empty title. Added `updateItem(itemId, data)` Server Action (`src/actions/items.ts`, `{ success, data, error }` pattern: Zod-validated via new `updateItemSchema` in `src/lib/validations/items.ts`, session-checked via `auth()`) backed by a new `updateItem` query function in `src/lib/db/items.ts` (ownership-checked via `findFirst` before updating; tags reset via `set: []` + `connectOrCreate`); extracted a shared `toItemDetail` mapper reused by `getItemDetail` and `updateItem` to avoid duplicating the Prisma-row-to-`ItemDetail` mapping. On save, `item-drawer.tsx` shows a toast, hands the returned `ItemDetail` back up to `ItemDrawerProvider` so the drawer updates without a second fetch, and calls `router.refresh()` so the underlying card list picks up the change; Cancel discards in-progress edits by returning to view mode. Added the shadcn `Textarea` component. Verified `npm run lint`, `npm run build`, and `npm run test` (38/38, 12 new tests covering `updateItemSchema` validation and the `updateItem` action's validation/auth/ownership/tag-reset branches) all pass, and via Playwright against the dev DB: edited a snippet's description/tags/content and confirmed the toast, the drawer returning to view mode with the new data, and the card grid updating live; confirmed the empty-title guard disables Save and Cancel discards an in-progress edit; restored the item to its original seeded state afterward.
+- Item Delete: clicking Delete in the item drawer's action bar now opens a shadcn `AlertDialog` confirming the deletion instead of doing nothing, mirroring the existing `delete-account-dialog.tsx` pattern. Added a `deleteItem(itemId)` Server Action (`src/actions/items.ts`, auth-checked via `auth()`) backed by a new `deleteItem` query function in `src/lib/db/items.ts` (ownership-checked via `findFirst` before `prisma.item.delete`, same pattern as `updateItem`). Confirming shows a Sonner success toast, calls `router.refresh()`, and closes the drawer via a new `onItemDeleted` callback threaded through `ItemDrawer` → `ItemDrawerBody` → `ItemViewBody`; Cancel closes the dialog without touching the item. Added 3 new tests to `src/actions/items.test.ts` covering the no-session, not-found/not-owned, and success branches (41/41 passing). Verified end-to-end with Playwright against the dev DB on a disposable test item: Cancel left the item and dialog state untouched; confirming Delete removed the item, closed the drawer, updated the sidebar type count, showed the "No items yet." empty state, and the row was confirmed gone directly in Postgres afterward. `npm run lint` and `npm run build` also pass.
