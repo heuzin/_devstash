@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/db/user";
 import type { ContentType } from "@/generated/prisma/client";
+import type { UpdateItemInput } from "@/lib/validations/items";
 
 export interface ItemSummary {
   id: string;
@@ -135,20 +136,17 @@ export interface ItemDetail {
   collections: { id: string; name: string }[];
 }
 
-export async function getItemDetail(id: string): Promise<ItemDetail | null> {
-  const userId = await getCurrentUserId();
-  if (!userId) return null;
+const itemDetailInclude = {
+  itemType: true,
+  tags: true,
+  collections: { include: { collection: true } },
+} as const;
 
-  const item = await prisma.item.findFirst({
-    where: { id, userId },
-    include: {
-      itemType: true,
-      tags: true,
-      collections: { include: { collection: true } },
-    },
-  });
-  if (!item) return null;
+type ItemDetailRow = NonNullable<
+  Awaited<ReturnType<typeof prisma.item.findFirst<{ include: typeof itemDetailInclude }>>>
+>;
 
+function toItemDetail(item: ItemDetailRow): ItemDetail {
   return {
     id: item.id,
     title: item.title,
@@ -177,6 +175,52 @@ export async function getItemDetail(id: string): Promise<ItemDetail | null> {
       name: collection.name,
     })),
   };
+}
+
+export async function getItemDetail(id: string): Promise<ItemDetail | null> {
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+
+  const item = await prisma.item.findFirst({
+    where: { id, userId },
+    include: itemDetailInclude,
+  });
+  if (!item) return null;
+
+  return toItemDetail(item);
+}
+
+export async function updateItem(
+  userId: string,
+  itemId: string,
+  data: UpdateItemInput,
+): Promise<ItemDetail | null> {
+  const existing = await prisma.item.findFirst({
+    where: { id: itemId, userId },
+    select: { id: true },
+  });
+  if (!existing) return null;
+
+  const item = await prisma.item.update({
+    where: { id: itemId },
+    data: {
+      title: data.title,
+      description: data.description ?? null,
+      content: data.content ?? null,
+      url: data.url ?? null,
+      language: data.language ?? null,
+      tags: {
+        set: [],
+        connectOrCreate: data.tags.map((name) => ({
+          where: { userId_name: { userId, name } },
+          create: { name, userId },
+        })),
+      },
+    },
+    include: itemDetailInclude,
+  });
+
+  return toItemDetail(item);
 }
 
 export interface ItemStats {

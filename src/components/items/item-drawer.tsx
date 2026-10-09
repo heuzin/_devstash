@@ -1,12 +1,23 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Calendar, Copy, FolderOpen, Pencil, Pin, Star, Tag, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { updateItem } from "@/actions/items";
 import type { ItemDetail } from "@/lib/db/items";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
+
+const CONTENT_TYPE_NAMES = new Set(["snippet", "prompt", "command", "note"]);
+const LANGUAGE_TYPE_NAMES = new Set(["snippet", "command"]);
+const URL_TYPE_NAMES = new Set(["link"]);
 
 function formatDate(date: string | Date) {
   return new Date(date).toLocaleDateString("en-US", {
@@ -26,9 +37,17 @@ interface ItemDrawerProps {
   item: ItemDetail | null;
   loading: boolean;
   error: string | null;
+  onItemUpdated: (item: ItemDetail) => void;
 }
 
-export function ItemDrawer({ open, onOpenChange, item, loading, error }: ItemDrawerProps) {
+export function ItemDrawer({
+  open,
+  onOpenChange,
+  item,
+  loading,
+  error,
+  onItemUpdated,
+}: ItemDrawerProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full gap-0 sm:max-w-xl">
@@ -36,7 +55,9 @@ export function ItemDrawer({ open, onOpenChange, item, loading, error }: ItemDra
         <div className="flex h-full flex-col overflow-y-auto">
           {loading && <ItemDrawerSkeleton />}
           {!loading && error && <p className="p-4 text-sm text-muted-foreground">{error}</p>}
-          {!loading && !error && item && <ItemDrawerBody item={item} />}
+          {!loading && !error && item && (
+            <ItemDrawerBody key={item.id} item={item} onItemUpdated={onItemUpdated} />
+          )}
         </div>
       </SheetContent>
     </Sheet>
@@ -57,7 +78,32 @@ function ItemDrawerSkeleton() {
   );
 }
 
-function ItemDrawerBody({ item }: { item: ItemDetail }) {
+function ItemDrawerBody({
+  item,
+  onItemUpdated,
+}: {
+  item: ItemDetail;
+  onItemUpdated: (item: ItemDetail) => void;
+}) {
+  const [mode, setMode] = useState<"view" | "edit">("view");
+
+  if (mode === "edit") {
+    return (
+      <ItemEditView
+        item={item}
+        onCancel={() => setMode("view")}
+        onSaved={(updated) => {
+          onItemUpdated(updated);
+          setMode("view");
+        }}
+      />
+    );
+  }
+
+  return <ItemViewBody item={item} onEdit={() => setMode("edit")} />;
+}
+
+function ItemViewBody({ item, onEdit }: { item: ItemDetail; onEdit: () => void }) {
   const Icon = ITEM_TYPE_ICONS[item.itemType.icon];
 
   return (
@@ -96,7 +142,7 @@ function ItemDrawerBody({ item }: { item: ItemDetail }) {
             Copy
           </Button>
           <div className="ml-auto flex items-center gap-1">
-            <Button variant="ghost" size="sm" className="text-muted-foreground">
+            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={onEdit}>
               <Pencil className="size-4" />
               Edit
             </Button>
@@ -154,22 +200,7 @@ function ItemDrawerBody({ item }: { item: ItemDetail }) {
           </section>
         )}
 
-        <section className="space-y-2">
-          <h3 className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-            <Calendar className="size-4" />
-            Details
-          </h3>
-          <div className="space-y-1 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Created</span>
-              <span>{formatDate(item.createdAt)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Updated</span>
-              <span>{formatDate(item.updatedAt)}</span>
-            </div>
-          </div>
-        </section>
+        <ItemDetailsSection item={item} />
       </div>
     </>
   );
@@ -210,5 +241,188 @@ function ItemContentSection({ item }: { item: ItemDetail }) {
         {item.content}
       </pre>
     </section>
+  );
+}
+
+function ItemDetailsSection({ item }: { item: ItemDetail }) {
+  return (
+    <section className="space-y-2">
+      <h3 className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+        <Calendar className="size-4" />
+        Details
+      </h3>
+      <div className="space-y-1 text-sm">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">Created</span>
+          <span>{formatDate(item.createdAt)}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">Updated</span>
+          <span>{formatDate(item.updatedAt)}</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ItemEditView({
+  item,
+  onCancel,
+  onSaved,
+}: {
+  item: ItemDetail;
+  onCancel: () => void;
+  onSaved: (item: ItemDetail) => void;
+}) {
+  const router = useRouter();
+  const Icon = ITEM_TYPE_ICONS[item.itemType.icon];
+  const typeName = item.itemType.name;
+  const showContent = CONTENT_TYPE_NAMES.has(typeName);
+  const showLanguage = LANGUAGE_TYPE_NAMES.has(typeName);
+  const showUrl = URL_TYPE_NAMES.has(typeName);
+
+  const [title, setTitle] = useState(item.title);
+  const [description, setDescription] = useState(item.description ?? "");
+  const [content, setContent] = useState(item.content ?? "");
+  const [language, setLanguage] = useState(item.language ?? "");
+  const [url, setUrl] = useState(item.url ?? "");
+  const [tagsInput, setTagsInput] = useState(item.tags.join(", "));
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function handleSave() {
+    const tags = tagsInput
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+
+    setIsSaving(true);
+    const result = await updateItem(item.id, {
+      title: title.trim(),
+      description: description.trim() || null,
+      content: showContent ? content || null : null,
+      language: showLanguage ? language.trim() || null : null,
+      url: showUrl ? url.trim() || null : null,
+      tags,
+    });
+    setIsSaving(false);
+
+    if (!result.success || !result.data) {
+      toast.error(result.error ?? "Failed to update item");
+      return;
+    }
+
+    toast.success("Item updated");
+    onSaved(result.data);
+    router.refresh();
+  }
+
+  return (
+    <>
+      <div className="space-y-3 p-4 pb-0">
+        <div className="flex items-start gap-3">
+          <div
+            className="flex size-10 shrink-0 items-center justify-center rounded-lg"
+            style={{ backgroundColor: `${item.itemType.color}1a` }}
+          >
+            {Icon && <Icon className="size-5" style={{ color: item.itemType.color }} />}
+          </div>
+          <Input
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="Title"
+            className="flex-1"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          <Badge variant="secondary">{capitalize(item.itemType.slug)}</Badge>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-y border-border py-2">
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={handleSave} disabled={isSaving || title.trim().length === 0}>
+            {isSaving ? "Saving..." : "Save"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-6 p-4">
+        <section className="space-y-1.5">
+          <Label htmlFor="item-description">Description</Label>
+          <Textarea
+            id="item-description"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            rows={2}
+          />
+        </section>
+
+        {showContent && (
+          <section className="space-y-1.5">
+            <Label htmlFor="item-content">Content</Label>
+            <Textarea
+              id="item-content"
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              rows={10}
+              className="font-mono text-xs"
+            />
+          </section>
+        )}
+
+        {showLanguage && (
+          <section className="space-y-1.5">
+            <Label htmlFor="item-language">Language</Label>
+            <Input
+              id="item-language"
+              value={language}
+              onChange={(event) => setLanguage(event.target.value)}
+            />
+          </section>
+        )}
+
+        {showUrl && (
+          <section className="space-y-1.5">
+            <Label htmlFor="item-url">URL</Label>
+            <Input
+              id="item-url"
+              value={url}
+              onChange={(event) => setUrl(event.target.value)}
+              type="url"
+            />
+          </section>
+        )}
+
+        <section className="space-y-1.5">
+          <Label htmlFor="item-tags">Tags</Label>
+          <Input
+            id="item-tags"
+            value={tagsInput}
+            onChange={(event) => setTagsInput(event.target.value)}
+            placeholder="Comma-separated"
+          />
+        </section>
+
+        {item.collections.length > 0 && (
+          <section className="space-y-1.5">
+            <h3 className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+              <FolderOpen className="size-4" />
+              Collections
+            </h3>
+            <div className="flex flex-wrap gap-1.5">
+              {item.collections.map((collection) => (
+                <Badge key={collection.id} variant="secondary">
+                  {collection.name}
+                </Badge>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <ItemDetailsSection item={item} />
+      </div>
+    </>
   );
 }

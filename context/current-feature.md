@@ -1,18 +1,27 @@
-# Current Feature
+# Current Feature: Item Drawer — Edit Mode
 
-<!-- Feature name and short description -->
+Clicking the Edit button (pencil icon) in the item drawer's action bar switches the same drawer into inline edit mode — fields become editable inputs, no navigation away.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Edit button toggles the drawer into edit mode; action bar is replaced with Save and Cancel buttons
+- Cancel discards changes and returns to view mode; Save persists via server action, returns to view mode, refreshes drawer data, and shows a success/error toast
+- Editable for all types: Title (required), Description (optional), Tags (comma-separated input → array on save)
+- Editable per type: Content (snippet/prompt/command/note), Language (snippet/command), URL (link) — each shown only for its relevant type(s)
+- Item type, Collections, and Created/Updated dates stay display-only in edit mode
+- After save, `router.refresh()` so the underlying card list reflects the changes
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- New `updateItem(itemId, data)` Server Action in `src/actions/items.ts`, `{ success, data, error }` pattern: validates input with Zod, gets session via `auth()`, validates ownership, calls the query function, returns the updated `ItemDetail` so the drawer can refresh without a second fetch
+- New `updateItem` query function in `lib/db/items.ts`; tag handling is disconnect-all-then-connect-or-create
+- Zod schema for the update payload: `title` non-empty trimmed string; `description`/`content`/`url`/`language` optional string-or-null; `tags` array of trimmed non-empty strings — server-side validation is the source of truth, returned as `{ success: false, error }` on failure
+- Client-side: controlled inputs with local state (no form library), Save disabled when title is empty as a basic UX guard
+- Content stays a plain textarea for now — a real code editor is a later feature
 
 ## History
 
