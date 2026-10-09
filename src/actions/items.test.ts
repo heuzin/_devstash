@@ -8,12 +8,13 @@ vi.mock("@/lib/prisma"); // picks up src/lib/__mocks__/prisma.ts
 
 import { auth } from "@/auth";
 import { prismaMock } from "@/lib/prisma-mock";
-import { deleteItem, updateItem } from "./items";
+import { createItem, deleteItem, updateItem } from "./items";
 
 const authMock = vi.mocked(auth);
 
 const USER_ID = "user_123";
 const ITEM_ID = "item_123";
+const TYPE_ID = "type_1";
 
 const VALID_INPUT = {
   title: "Updated title",
@@ -40,13 +41,102 @@ const DB_ITEM = {
   createdAt: new Date("2026-01-01"),
   updatedAt: new Date("2026-01-02"),
   tags: [{ name: "react" }, { name: "hooks" }],
-  itemType: { id: "type_1", name: "snippet", slug: "snippets", icon: "Code", color: "#3b82f6" },
+  itemType: { id: TYPE_ID, name: "snippet", slug: "snippets", icon: "Code", color: "#3b82f6" },
   collections: [{ collection: { id: "col_1", name: "React Patterns" } }],
 };
 
 beforeEach(() => {
   mockReset(prismaMock);
   authMock.mockReset();
+});
+
+describe("createItem", () => {
+  const VALID_CREATE_INPUT = { ...VALID_INPUT, itemTypeId: TYPE_ID };
+
+  it("rejects an empty title before touching auth or the database", async () => {
+    const result = await createItem({ ...VALID_CREATE_INPUT, title: "   " });
+
+    expect(result).toEqual({ success: false, error: "Title is required" });
+    expect(authMock).not.toHaveBeenCalled();
+    expect(prismaMock.itemType.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("rejects when there is no signed-in user", async () => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue(null);
+
+    const result = await createItem(VALID_CREATE_INPUT);
+
+    expect(result).toEqual({ success: false, error: "You must be signed in to do this" });
+    expect(prismaMock.itemType.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("returns an error for an invalid or non-creatable item type", async () => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue({ user: { id: USER_ID } });
+    prismaMock.itemType.findFirst.mockResolvedValue(null);
+
+    const result = await createItem(VALID_CREATE_INPUT);
+
+    expect(result).toEqual({ success: false, error: "Invalid item type" });
+    expect(prismaMock.item.create).not.toHaveBeenCalled();
+  });
+
+  it("requires a URL for link items", async () => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue({ user: { id: USER_ID } });
+    prismaMock.itemType.findFirst.mockResolvedValue({
+      id: TYPE_ID,
+      name: "link",
+      slug: "links",
+      icon: "Link",
+      color: "#10b981",
+    } as never);
+
+    const result = await createItem({ ...VALID_CREATE_INPUT, content: null, url: null });
+
+    expect(result).toEqual({ success: false, error: "URL is required for links" });
+    expect(prismaMock.item.create).not.toHaveBeenCalled();
+  });
+
+  it("creates the item and connects tags", async () => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue({ user: { id: USER_ID } });
+    prismaMock.itemType.findFirst.mockResolvedValue({
+      id: TYPE_ID,
+      name: "snippet",
+      slug: "snippets",
+      icon: "Code",
+      color: "#3b82f6",
+    } as never);
+    prismaMock.item.create.mockResolvedValue(DB_ITEM as never);
+
+    const result = await createItem(VALID_CREATE_INPUT);
+
+    expect(result.success).toBe(true);
+    expect(result.data).toMatchObject({
+      id: ITEM_ID,
+      title: "Updated title",
+      tags: ["react", "hooks"],
+      itemType: { slug: "snippets" },
+    });
+
+    const createArgs = prismaMock.item.create.mock.calls[0][0];
+    expect(createArgs.data.itemTypeId).toBe(TYPE_ID);
+    expect(createArgs.data.contentType).toBe("TEXT");
+    expect(createArgs.data.tags).toEqual({
+      connectOrCreate: [
+        {
+          where: { userId_name: { userId: USER_ID, name: "react" } },
+          create: { name: "react", userId: USER_ID },
+        },
+        {
+          where: { userId_name: { userId: USER_ID, name: "hooks" } },
+          create: { name: "hooks", userId: USER_ID },
+        },
+      ],
+    });
+  });
 });
 
 describe("updateItem", () => {

@@ -5,6 +5,7 @@ import { FolderPlus, Layers, PanelLeft, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useCreateItemDialog } from "@/components/items/create-item-dialog-provider";
 import { cn } from "@/lib/utils";
 
 interface DashboardChromeProps {
@@ -15,6 +16,7 @@ interface DashboardChromeProps {
 export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const { open: openCreateItemDialog } = useCreateItemDialog();
 
   function toggleSidebar() {
     if (window.matchMedia("(min-width: 768px)").matches) {
@@ -45,7 +47,7 @@ export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
             <FolderPlus className="size-4" />
             New Collection
           </Button>
-          <Button>
+          <Button onClick={openCreateItemDialog}>
             <Plus className="size-4" />
             New Item
           </Button>

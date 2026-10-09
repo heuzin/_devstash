@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { updateItemSchema } from "./items";
+import { createItemSchema, updateItemSchema } from "./items";
 
 const VALID_INPUT = {
   title: "useDebounce Hook",
@@ -9,6 +9,35 @@ const VALID_INPUT = {
   url: null,
   tags: ["react", "hooks"],
 };
+
+describe("createItemSchema", () => {
+  const VALID_CREATE_INPUT = { ...VALID_INPUT, itemTypeId: "type_1" };
+
+  it("accepts a fully populated payload", () => {
+    const result = createItemSchema.safeParse(VALID_CREATE_INPUT);
+    expect(result.success).toBe(true);
+  });
+
+  it("requires an itemTypeId", () => {
+    const result = createItemSchema.safeParse({ ...VALID_CREATE_INPUT, itemTypeId: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("trims and requires a non-empty title", () => {
+    const result = createItemSchema.safeParse({ ...VALID_CREATE_INPUT, title: "   " });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an invalid URL", () => {
+    const result = createItemSchema.safeParse({ ...VALID_CREATE_INPUT, url: "not-a-url" });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts an empty tags array", () => {
+    const result = createItemSchema.safeParse({ ...VALID_CREATE_INPUT, tags: [] });
+    expect(result.success).toBe(true);
+  });
+});
 
 describe("updateItemSchema", () => {
   it("accepts a fully populated payload", () => {

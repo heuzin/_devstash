@@ -1,18 +1,28 @@
-# Current Feature
+# Current Feature: Item Create
 
-<!-- Feature name and short description -->
+Add new items via a modal dialog, opened from the "New Item" button in the top bar.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- "New Item" button in the top bar opens a shadcn `Dialog` to create an item
+- Type selector covering snippet, prompt, command, note, link
+- Fields shown conditionally based on selected type:
+  - All types: title (required), description, tags
+  - snippet/command: content, language
+  - prompt/note: content
+  - link: URL (required)
+- `createItem` Server Action with Zod validation
+- `createItem` query function in `lib/db/items.ts`
+- Toast on success, modal closes, and the page/list refreshes
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Spec source: `context/features/item-create-spec.md`
+- Note: file/image types are excluded from this dialog's type selector (spec lists only snippet, prompt, command, note, link)
 
 ## History
 

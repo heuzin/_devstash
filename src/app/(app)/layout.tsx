@@ -1,6 +1,7 @@
 import { DashboardChrome } from "@/components/dashboard/dashboard-chrome";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { VerifyEmailBanner } from "@/components/dashboard/verify-email-banner";
+import { CreateItemDialogProvider } from "@/components/items/create-item-dialog-provider";
 import { ItemDrawerProvider } from "@/components/items/item-drawer-provider";
 import { getSidebarCollections } from "@/lib/db/collections";
 import { getItemTypesWithCounts } from "@/lib/db/items";
@@ -24,11 +25,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   );
 
   return (
-    <DashboardChrome sidebar={sidebar}>
-      <ItemDrawerProvider>
-        {isEmailVerificationEnabled() && user && !user.emailVerified && <VerifyEmailBanner />}
-        {children}
-      </ItemDrawerProvider>
-    </DashboardChrome>
+    <CreateItemDialogProvider itemTypes={itemTypes}>
+      <DashboardChrome sidebar={sidebar}>
+        <ItemDrawerProvider>
+          {isEmailVerificationEnabled() && user && !user.emailVerified && <VerifyEmailBanner />}
+          {children}
+        </ItemDrawerProvider>
+      </DashboardChrome>
+    </CreateItemDialogProvider>
   );
 }

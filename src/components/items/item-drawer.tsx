@@ -26,10 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { deleteItem, updateItem } from "@/actions/items";
 import type { ItemDetail } from "@/lib/db/items";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
-
-const CONTENT_TYPE_NAMES = new Set(["snippet", "prompt", "command", "note"]);
-const LANGUAGE_TYPE_NAMES = new Set(["snippet", "command"]);
-const URL_TYPE_NAMES = new Set(["link"]);
+import { CONTENT_TYPE_NAMES, LANGUAGE_TYPE_NAMES, URL_TYPE_NAMES } from "@/lib/item-types";
 
 function formatDate(date: string | Date) {
   return new Date(date).toLocaleDateString("en-US", {

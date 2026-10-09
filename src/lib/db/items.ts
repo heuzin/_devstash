@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/db/user";
 import type { ContentType } from "@/generated/prisma/client";
-import type { UpdateItemInput } from "@/lib/validations/items";
+import type { CreateItemInput, UpdateItemInput } from "@/lib/validations/items";
+import { CREATABLE_ITEM_TYPE_NAMES, URL_TYPE_NAMES } from "@/lib/item-types";
 
 export interface ItemSummary {
   id: string;
@@ -186,6 +187,44 @@ export async function getItemDetail(id: string): Promise<ItemDetail | null> {
     include: itemDetailInclude,
   });
   if (!item) return null;
+
+  return toItemDetail(item);
+}
+
+export async function createItem(userId: string, data: CreateItemInput): Promise<ItemDetail> {
+  const itemType = await prisma.itemType.findFirst({
+    where: { id: data.itemTypeId, isSystem: true },
+  });
+  if (!itemType || !CREATABLE_ITEM_TYPE_NAMES.has(itemType.name)) {
+    throw new Error("Invalid item type");
+  }
+
+  const isUrlType = URL_TYPE_NAMES.has(itemType.name);
+  if (isUrlType && !data.url) {
+    throw new Error("URL is required for links");
+  }
+
+  const contentType: ContentType = isUrlType ? "URL" : "TEXT";
+
+  const item = await prisma.item.create({
+    data: {
+      title: data.title,
+      description: data.description ?? null,
+      contentType,
+      content: isUrlType ? null : (data.content ?? null),
+      url: isUrlType ? data.url : null,
+      language: data.language ?? null,
+      userId,
+      itemTypeId: itemType.id,
+      tags: {
+        connectOrCreate: data.tags.map((name) => ({
+          where: { userId_name: { userId, name } },
+          create: { name, userId },
+        })),
+      },
+    },
+    include: itemDetailInclude,
+  });
 
   return toItemDetail(item);
 }
