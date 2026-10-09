@@ -4,6 +4,18 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Calendar, Copy, FolderOpen, Pencil, Pin, Star, Tag, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { updateItem } from "@/actions/items";
+import { deleteItem, updateItem } from "@/actions/items";
 import type { ItemDetail } from "@/lib/db/items";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
 
@@ -56,7 +68,12 @@ export function ItemDrawer({
           {loading && <ItemDrawerSkeleton />}
           {!loading && error && <p className="p-4 text-sm text-muted-foreground">{error}</p>}
           {!loading && !error && item && (
-            <ItemDrawerBody key={item.id} item={item} onItemUpdated={onItemUpdated} />
+            <ItemDrawerBody
+              key={item.id}
+              item={item}
+              onItemUpdated={onItemUpdated}
+              onItemDeleted={() => onOpenChange(false)}
+            />
           )}
         </div>
       </SheetContent>
@@ -81,9 +98,11 @@ function ItemDrawerSkeleton() {
 function ItemDrawerBody({
   item,
   onItemUpdated,
+  onItemDeleted,
 }: {
   item: ItemDetail;
   onItemUpdated: (item: ItemDetail) => void;
+  onItemDeleted: () => void;
 }) {
   const [mode, setMode] = useState<"view" | "edit">("view");
 
@@ -100,11 +119,40 @@ function ItemDrawerBody({
     );
   }
 
-  return <ItemViewBody item={item} onEdit={() => setMode("edit")} />;
+  return (
+    <ItemViewBody item={item} onEdit={() => setMode("edit")} onDeleted={onItemDeleted} />
+  );
 }
 
-function ItemViewBody({ item, onEdit }: { item: ItemDetail; onEdit: () => void }) {
+function ItemViewBody({
+  item,
+  onEdit,
+  onDeleted,
+}: {
+  item: ItemDetail;
+  onEdit: () => void;
+  onDeleted: () => void;
+}) {
+  const router = useRouter();
   const Icon = ITEM_TYPE_ICONS[item.itemType.icon];
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function handleConfirmDelete() {
+    setIsDeleting(true);
+    const result = await deleteItem(item.id);
+    setIsDeleting(false);
+
+    if (!result.success) {
+      toast.error(result.error ?? "Failed to delete item");
+      return;
+    }
+
+    setIsDeleteDialogOpen(false);
+    toast.success("Item deleted");
+    router.refresh();
+    onDeleted();
+  }
 
   return (
     <>
@@ -146,14 +194,42 @@ function ItemViewBody({ item, onEdit }: { item: ItemDetail; onEdit: () => void }
               <Pencil className="size-4" />
               Edit
             </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="text-destructive"
-              aria-label="Delete"
-            >
-              <Trash2 className="size-4" />
-            </Button>
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+              <AlertDialogTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-destructive"
+                    aria-label="Delete"
+                  />
+                }
+              >
+                <Trash2 className="size-4" />
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogMedia>
+                    <Trash2 className="text-destructive" />
+                  </AlertDialogMedia>
+                  <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This permanently deletes &ldquo;{item.title}&rdquo;. This action cannot be
+                    undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    variant="destructive"
+                    disabled={isDeleting}
+                    onClick={handleConfirmDelete}
+                  >
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </div>

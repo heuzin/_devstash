@@ -8,7 +8,7 @@ vi.mock("@/lib/prisma"); // picks up src/lib/__mocks__/prisma.ts
 
 import { auth } from "@/auth";
 import { prismaMock } from "@/lib/prisma-mock";
-import { updateItem } from "./items";
+import { deleteItem, updateItem } from "./items";
 
 const authMock = vi.mocked(auth);
 
@@ -124,5 +124,43 @@ describe("updateItem", () => {
         },
       ],
     });
+  });
+});
+
+describe("deleteItem", () => {
+  it("rejects when there is no signed-in user", async () => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue(null);
+
+    const result = await deleteItem(ITEM_ID);
+
+    expect(result).toEqual({ success: false, error: "You must be signed in to do this" });
+    expect(prismaMock.item.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when the item doesn't exist or isn't owned by the user", async () => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue({ user: { id: USER_ID } });
+    prismaMock.item.findFirst.mockResolvedValue(null);
+
+    const result = await deleteItem(ITEM_ID);
+
+    expect(result).toEqual({ success: false, error: "Item not found" });
+    expect(prismaMock.item.delete).not.toHaveBeenCalled();
+  });
+
+  it("deletes the item when owned by the signed-in user", async () => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue({ user: { id: USER_ID } });
+    prismaMock.item.findFirst.mockResolvedValue({ id: ITEM_ID } as never);
+
+    const result = await deleteItem(ITEM_ID);
+
+    expect(result).toEqual({ success: true });
+    expect(prismaMock.item.findFirst).toHaveBeenCalledWith({
+      where: { id: ITEM_ID, userId: USER_ID },
+      select: { id: true },
+    });
+    expect(prismaMock.item.delete).toHaveBeenCalledWith({ where: { id: ITEM_ID } });
   });
 });

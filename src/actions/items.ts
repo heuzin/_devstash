@@ -1,12 +1,21 @@
 "use server";
 
 import { auth } from "@/auth";
-import { updateItem as updateItemQuery, type ItemDetail } from "@/lib/db/items";
+import {
+  deleteItem as deleteItemQuery,
+  updateItem as updateItemQuery,
+  type ItemDetail,
+} from "@/lib/db/items";
 import { updateItemSchema } from "@/lib/validations/items";
 
 interface ActionResult {
   success: boolean;
   data?: ItemDetail;
+  error?: string;
+}
+
+interface DeleteActionResult {
+  success: boolean;
   error?: string;
 }
 
@@ -27,4 +36,18 @@ export async function updateItem(itemId: string, data: unknown): Promise<ActionR
   }
 
   return { success: true, data: updated };
+}
+
+export async function deleteItem(itemId: string): Promise<DeleteActionResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You must be signed in to do this" };
+  }
+
+  const deleted = await deleteItemQuery(session.user.id, itemId);
+  if (!deleted) {
+    return { success: false, error: "Item not found" };
+  }
+
+  return { success: true };
 }

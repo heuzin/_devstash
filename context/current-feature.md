@@ -1,18 +1,26 @@
-# Current Feature
+# Current Feature: Item Delete
 
-<!-- Feature name and short description -->
+Delete functionality for items, with a shadcn confirmation dialog and a success toast.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Clicking the existing (currently inert) Delete button in the item drawer's action bar opens a shadcn confirmation dialog (`AlertDialog`) before anything is deleted
+- Confirming the dialog deletes the item and shows a success toast (Sonner)
+- Canceling the dialog leaves the item untouched and closes the dialog
+- After a successful delete, the item drawer closes and the underlying list/grid (dashboard, `/items/[type]`) no longer shows the deleted item
+- Deletion is a Server Action, auth- and ownership-checked on the server, following the existing `{ success, data, error }` pattern
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Mirrors the existing `delete-account-dialog.tsx` pattern (shadcn `alert-dialog`, already installed) for the confirmation UI
+- Delete button already exists in `src/components/items/item-drawer.tsx` (`ItemViewBody`, destructive ghost icon button) but has no handler yet
+- Add a `deleteItem` Server Action in `src/actions/items.ts`, backed by a new query function in `src/lib/db/items.ts` (ownership-checked via `findFirst`/`deleteMany`, same pattern as `updateItem`)
+- No new Zod schema needed beyond validating the id is a non-empty string, unless review decides otherwise
+- Add unit tests for the new action (auth/ownership/not-found branches) per `context/coding-standards.md` Testing section
 
 ## History
 
