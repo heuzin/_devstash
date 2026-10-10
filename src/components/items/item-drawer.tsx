@@ -24,6 +24,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { CodeEditor } from "@/components/items/code-editor";
+import { MarkdownEditor } from "@/components/items/markdown-editor";
 import { deleteItem, updateItem } from "@/actions/items";
 import type { ItemDetail } from "@/lib/db/items";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
@@ -31,6 +32,7 @@ import {
   CODE_EDITOR_FALLBACK_LANGUAGE,
   CONTENT_TYPE_NAMES,
   LANGUAGE_TYPE_NAMES,
+  MARKDOWN_EDITOR_TYPE_NAMES,
   URL_TYPE_NAMES,
 } from "@/lib/item-types";
 
@@ -314,12 +316,15 @@ function ItemContentSection({ item }: { item: ItemDetail }) {
   if (!item.content) return null;
 
   const fallbackLanguage = CODE_EDITOR_FALLBACK_LANGUAGE[item.itemType.name];
+  const isMarkdown = MARKDOWN_EDITOR_TYPE_NAMES.has(item.itemType.name);
 
   return (
     <section className="space-y-1.5">
       <h3 className="text-sm font-medium text-muted-foreground">Content</h3>
       {fallbackLanguage ? (
         <CodeEditor value={item.content} language={item.language} fallbackLanguage={fallbackLanguage} readOnly />
+      ) : isMarkdown ? (
+        <MarkdownEditor value={item.content} readOnly />
       ) : (
         <pre className="max-h-80 overflow-auto rounded-lg border border-border bg-muted/30 p-3 font-mono text-xs whitespace-pre-wrap">
           {item.content}
@@ -366,6 +371,7 @@ function ItemEditView({
   const showLanguage = LANGUAGE_TYPE_NAMES.has(typeName);
   const showUrl = URL_TYPE_NAMES.has(typeName);
   const codeEditorFallbackLanguage = CODE_EDITOR_FALLBACK_LANGUAGE[typeName];
+  const showMarkdownEditor = MARKDOWN_EDITOR_TYPE_NAMES.has(typeName);
 
   const [title, setTitle] = useState(item.title);
   const [description, setDescription] = useState(item.description ?? "");
@@ -455,6 +461,8 @@ function ItemEditView({
                 language={language}
                 fallbackLanguage={codeEditorFallbackLanguage}
               />
+            ) : showMarkdownEditor ? (
+              <MarkdownEditor value={content} onChange={setContent} />
             ) : (
               <Textarea
                 id="item-content"

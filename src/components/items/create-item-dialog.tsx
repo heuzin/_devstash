@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { CodeEditor } from "@/components/items/code-editor";
+import { MarkdownEditor } from "@/components/items/markdown-editor";
 import { createItem } from "@/actions/items";
 import type { ItemTypeSummary } from "@/lib/db/items";
 import {
@@ -22,6 +23,7 @@ import {
   CONTENT_TYPE_NAMES,
   CREATABLE_ITEM_TYPE_NAMES,
   LANGUAGE_TYPE_NAMES,
+  MARKDOWN_EDITOR_TYPE_NAMES,
   URL_TYPE_NAMES,
 } from "@/lib/item-types";
 
@@ -70,6 +72,7 @@ export function CreateItemDialog({
   const codeEditorFallbackLanguage = selectedType
     ? CODE_EDITOR_FALLBACK_LANGUAGE[selectedType.name]
     : undefined;
+  const showMarkdownEditor = selectedType ? MARKDOWN_EDITOR_TYPE_NAMES.has(selectedType.name) : false;
 
   const canSubmit =
     form.title.trim().length > 0 && itemTypeId.length > 0 && (!showUrl || form.url.trim().length > 0);
@@ -170,6 +173,11 @@ export function CreateItemDialog({
                   onChange={(content) => setForm((f) => ({ ...f, content }))}
                   language={form.language}
                   fallbackLanguage={codeEditorFallbackLanguage}
+                />
+              ) : showMarkdownEditor ? (
+                <MarkdownEditor
+                  value={form.content}
+                  onChange={(content) => setForm((f) => ({ ...f, content }))}
                 />
               ) : (
                 <Textarea

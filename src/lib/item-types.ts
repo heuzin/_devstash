@@ -12,3 +12,7 @@ export const CODE_EDITOR_FALLBACK_LANGUAGE: Record<string, string> = {
   snippet: "plaintext",
   command: "shell",
 };
+
+// Types whose content renders in the MarkdownEditor (Write/Preview tabs)
+// instead of a plain Textarea.
+export const MARKDOWN_EDITOR_TYPE_NAMES = new Set(["note", "prompt"]);
