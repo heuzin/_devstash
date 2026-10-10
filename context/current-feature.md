@@ -1,40 +1,18 @@
-# Current Feature: Markdown Editor
+# Current Feature
 
-Add a Markdown editor component for notes and prompts with Write/Preview tabs and proper dark theme styling.
+<!-- Feature name and short description -->
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Create a `MarkdownEditor` component with a tabbed Write/Preview interface
-- Replace `Textarea` with `MarkdownEditor` for notes and prompts only (snippets/commands keep `CodeEditor`, unchanged)
-- Render markdown via `react-markdown` + `remark-gfm` (GitHub Flavored Markdown)
-- Match existing dark theme styling (`bg-[#1e1e1e]` container, `bg-[#2d2d2d]` header), mirroring `CodeEditor`
-- Add a copy button in the header, same style as `CodeEditor`
-- Support both readonly (display) and edit modes
-- Readonly mode shows only the Preview tab; edit mode defaults to Write with Preview available
-- Fluid height, max 400px, matching `CodeEditor` behavior
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-### Styling requirements
-
-- Headings (h1-h6) visually distinct with proper sizing/weight
-- Code blocks: dark background, monospace font
-- Inline code: subtle background highlight
-- Lists (ordered/unordered): proper indentation and bullets
-- Blockquotes: left border accent
-- Links: blue with hover state
-- Tables: borders and header background
-- Use a custom CSS class (e.g. `.markdown-preview`) for reliable dark mode styling
-
-### Integration points
-
-- `NewItemDialog`: note/prompt content field
-- `ItemDrawer` (edit mode): note/prompt content field
-- `ItemDrawer` (view mode): readonly mode for note/prompt content
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -68,3 +46,4 @@ In Progress
 - Item Delete: clicking Delete in the item drawer's action bar now opens a shadcn `AlertDialog` confirming the deletion instead of doing nothing, mirroring the existing `delete-account-dialog.tsx` pattern. Added a `deleteItem(itemId)` Server Action (`src/actions/items.ts`, auth-checked via `auth()`) backed by a new `deleteItem` query function in `src/lib/db/items.ts` (ownership-checked via `findFirst` before `prisma.item.delete`, same pattern as `updateItem`). Confirming shows a Sonner success toast, calls `router.refresh()`, and closes the drawer via a new `onItemDeleted` callback threaded through `ItemDrawer` → `ItemDrawerBody` → `ItemViewBody`; Cancel closes the dialog without touching the item. Added 3 new tests to `src/actions/items.test.ts` covering the no-session, not-found/not-owned, and success branches (41/41 passing). Verified end-to-end with Playwright against the dev DB on a disposable test item: Cancel left the item and dialog state untouched; confirming Delete removed the item, closed the drawer, updated the sidebar type count, showed the "No items yet." empty state, and the row was confirmed gone directly in Postgres afterward. `npm run lint` and `npm run build` also pass.
 - Item Create: added a shadcn `Dialog` opened from the "New Item" button in the top bar, letting users create snippet/prompt/command/note/link items (file/image excluded, pending the R2 upload flow) — a type `Select`, Title (required), Description, Tags, and type-conditional fields (Content for snippet/prompt/command/note, Language for snippet/command, URL required for link). Added a `createItem` Server Action (`src/actions/items.ts`, Zod-validated via new `createItemSchema` in `src/lib/validations/items.ts`) backed by a new `createItem` query function in `src/lib/db/items.ts` that looks up the `ItemType` server-side, rejects any type outside the creatable set (blocking a tampered `itemTypeId` for file/image), and requires a URL for links. Extracted the type-name constant sets (`CREATABLE_ITEM_TYPE_NAMES`, `CONTENT_TYPE_NAMES`, `LANGUAGE_TYPE_NAMES`, `URL_TYPE_NAMES`) into a new shared `src/lib/item-types.ts`, refactoring `item-drawer.tsx`'s edit mode to reuse them instead of duplicating its own copies. Added a `CreateItemDialogProvider`/`useCreateItemDialog` context (mirroring the existing `ItemDrawerProvider` pattern) wired into `src/app/(app)/layout.tsx`, with `DashboardChrome`'s "New Item" button calling it; on success shows a toast, closes/resets the dialog, and calls `router.refresh()`. Added shadcn `Dialog` and `Select` components via the CLI. Verified `npm run lint`, `npm run build`, and `npm run test` (51/51, 10 new tests covering `createItemSchema` validation and the `createItem` action's validation/auth/invalid-type/URL-required/success branches) all pass, and via Playwright against the dev DB: created a snippet item (content/language/tags) and a link item (URL-only fields), confirmed both rendered correctly in the item drawer, confirmed the type dropdown only lists the five creatable types, then deleted both test items to restore the seeded state (16 items/5 collections).
 - Code Editor (Monaco) & Type-Specific Add: added a Monaco-backed `CodeEditor` component (`src/components/items/code-editor.tsx`) with a custom `devstash-dark` theme, macOS-style window dots, a copy-to-clipboard button, a language label in the header, readonly/edit modes, and a fluid height (100–400px) synced to content via `onDidContentSizeChange`; wired into snippet/command items' readonly display, drawer edit mode, and the New Item dialog, gated by a new `CODE_EDITOR_FALLBACK_LANGUAGE` map (`plaintext` for snippets, `shell` for commands) in `src/lib/item-types.ts` — notes/prompts/other types keep the plain Textarea. Free-text language input is normalized to a Monaco language id via a new `resolveMonacoLanguage` utility (`src/lib/monaco-languages.ts`, aliasing e.g. `ts`→`typescript`, `bash`→`shell`). Mid-feature, also added a type-specific "Add [Type]" button (`AddTypeItemButton`) on each `/items/[type]` page (shown only for creatable types) that opens the New Item dialog with that type preselected — required extending `useCreateItemDialog().open()` to take an optional type ID and resetting `CreateItemDialog`'s form/type on each open using React's render-time state-adjustment pattern (not an effect, to satisfy the `react-hooks/set-state-in-effect` lint rule) rather than on close; also fixed a bug this signature change introduced in `DashboardChrome`'s generic "New Item" button, which was passing the button's `onClick` handler directly and would have leaked the click event as the type-id argument. Verified `npm run lint`, `npm run build`, and `npm run test` (55/55, 4 new tests for `resolveMonacoLanguage`'s branching/alias/passthrough behavior) all pass, and via Playwright against the dev DB: snippet/command readonly and edit views, copy-to-clipboard (verified via clipboard read), live language-driven syntax highlighting, the "Add Command" button preselecting Command with the shell fallback, the generic "New Item" button still defaulting to Snippet afterward, and no Add button on the non-creatable Files type page.
+- Markdown Editor: added a `MarkdownEditor` component (`src/components/items/markdown-editor.tsx`) with a tabbed Write/Preview interface (shadcn `Tabs`, added via the CLI, restyled to match `CodeEditor`'s dark header), rendering markdown via `react-markdown` + `remark-gfm` for GitHub Flavored Markdown support, a copy-to-clipboard button matching `CodeEditor`'s style, and a fluid height (100–400px, auto-growing textarea in Write mode, scrollable preview past the max) matching `CodeEditor`'s behavior; readonly mode shows only a static "Preview" label and renders the preview directly (no tab control), while edit mode defaults to the Write tab with Preview available. Added a `.markdown-preview` CSS class in `globals.css` covering headings (h1–h6), code blocks, inline code, ordered/unordered lists, blockquotes, links, and tables per the dark theme. Added a `MARKDOWN_EDITOR_TYPE_NAMES` set (`note`, `prompt`) to `src/lib/item-types.ts` and swapped the plain `Textarea` fallback for `MarkdownEditor` at the three integration points — `CreateItemDialog`, `ItemDrawer`'s readonly `ItemContentSection`, and `ItemDrawer`'s `ItemEditView` — leaving snippets/commands on the Monaco `CodeEditor` untouched. Verified `npm run lint`, `npm run build`, and `npm run test` (55/55, no new tests needed — this is UI-only, no server actions/utilities changed) all pass, and via Playwright against the dev DB: created a note with headings, bold/italic, inline code, nested lists, a blockquote, a fenced code block, a link, and a GFM table, confirmed all render correctly in the create dialog's Preview tab and the readonly drawer view (Preview-only, no tab control), confirmed edit mode defaults to Write with the raw source and Preview available, confirmed copy-to-clipboard works, confirmed a snippet item's Monaco `CodeEditor` is unaffected, then deleted the test item to restore the seeded state (0 notes).
