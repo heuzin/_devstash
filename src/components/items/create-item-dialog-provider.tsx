@@ -6,7 +6,7 @@ import { CreateItemDialog } from "@/components/items/create-item-dialog";
 import type { ItemTypeSummary } from "@/lib/db/items";
 
 interface CreateItemDialogContextValue {
-  open: () => void;
+  open: (preselectedItemTypeId?: string) => void;
 }
 
 const CreateItemDialogContext = createContext<CreateItemDialogContextValue | null>(null);
@@ -27,15 +27,24 @@ export function CreateItemDialogProvider({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [preselectedItemTypeId, setPreselectedItemTypeId] = useState<string | undefined>();
   const router = useRouter();
 
   return (
-    <CreateItemDialogContext.Provider value={{ open: () => setOpen(true) }}>
+    <CreateItemDialogContext.Provider
+      value={{
+        open: (itemTypeId) => {
+          setPreselectedItemTypeId(itemTypeId);
+          setOpen(true);
+        },
+      }}
+    >
       {children}
       <CreateItemDialog
         open={open}
         onOpenChange={setOpen}
         itemTypes={itemTypes}
+        preselectedItemTypeId={preselectedItemTypeId}
         onCreated={() => router.refresh()}
       />
     </CreateItemDialogContext.Provider>

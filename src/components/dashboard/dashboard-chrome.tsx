@@ -47,7 +47,7 @@ export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
             <FolderPlus className="size-4" />
             New Collection
           </Button>
-          <Button onClick={openCreateItemDialog}>
+          <Button onClick={() => openCreateItemDialog()}>
             <Plus className="size-4" />
             New Item
           </Button>

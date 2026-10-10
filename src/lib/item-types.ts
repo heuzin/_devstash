@@ -5,3 +5,10 @@ export const CREATABLE_ITEM_TYPE_NAMES = new Set(["snippet", "prompt", "command"
 export const CONTENT_TYPE_NAMES = new Set(["snippet", "prompt", "command", "note"]);
 export const LANGUAGE_TYPE_NAMES = new Set(["snippet", "command"]);
 export const URL_TYPE_NAMES = new Set(["link"]);
+
+// Types whose content renders in the Monaco-backed CodeEditor instead of a
+// plain Textarea, and the language Monaco falls back to when none is set.
+export const CODE_EDITOR_FALLBACK_LANGUAGE: Record<string, string> = {
+  snippet: "plaintext",
+  command: "shell",
+};

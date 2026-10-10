@@ -14,9 +14,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { CodeEditor } from "@/components/items/code-editor";
 import { createItem } from "@/actions/items";
 import type { ItemTypeSummary } from "@/lib/db/items";
-import { CONTENT_TYPE_NAMES, CREATABLE_ITEM_TYPE_NAMES, LANGUAGE_TYPE_NAMES, URL_TYPE_NAMES } from "@/lib/item-types";
+import {
+  CODE_EDITOR_FALLBACK_LANGUAGE,
+  CONTENT_TYPE_NAMES,
+  CREATABLE_ITEM_TYPE_NAMES,
+  LANGUAGE_TYPE_NAMES,
+  URL_TYPE_NAMES,
+} from "@/lib/item-types";
 
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -28,31 +35,44 @@ interface CreateItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   itemTypes: ItemTypeSummary[];
+  preselectedItemTypeId?: string;
   onCreated: () => void;
 }
 
-export function CreateItemDialog({ open, onOpenChange, itemTypes, onCreated }: CreateItemDialogProps) {
+export function CreateItemDialog({
+  open,
+  onOpenChange,
+  itemTypes,
+  preselectedItemTypeId,
+  onCreated,
+}: CreateItemDialogProps) {
   const creatableTypes = itemTypes.filter((type) => CREATABLE_ITEM_TYPE_NAMES.has(type.name));
 
-  const [itemTypeId, setItemTypeId] = useState(creatableTypes[0]?.id ?? "");
+  const [itemTypeId, setItemTypeId] = useState(preselectedItemTypeId ?? creatableTypes[0]?.id ?? "");
   const [form, setForm] = useState(EMPTY_FORM);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Reset the form to a fresh state (optionally preselecting a type) every
+  // time the dialog opens, without the extra render an effect would cause.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setItemTypeId(preselectedItemTypeId ?? creatableTypes[0]?.id ?? "");
+      setForm(EMPTY_FORM);
+    }
+  }
 
   const selectedType = creatableTypes.find((type) => type.id === itemTypeId);
   const showContent = selectedType ? CONTENT_TYPE_NAMES.has(selectedType.name) : false;
   const showLanguage = selectedType ? LANGUAGE_TYPE_NAMES.has(selectedType.name) : false;
   const showUrl = selectedType ? URL_TYPE_NAMES.has(selectedType.name) : false;
+  const codeEditorFallbackLanguage = selectedType
+    ? CODE_EDITOR_FALLBACK_LANGUAGE[selectedType.name]
+    : undefined;
 
   const canSubmit =
     form.title.trim().length > 0 && itemTypeId.length > 0 && (!showUrl || form.url.trim().length > 0);
-
-  function handleOpenChange(next: boolean) {
-    onOpenChange(next);
-    if (!next) {
-      setForm(EMPTY_FORM);
-      setItemTypeId(creatableTypes[0]?.id ?? "");
-    }
-  }
 
   async function handleSubmit() {
     const tags = form.tagsInput
@@ -78,12 +98,12 @@ export function CreateItemDialog({ open, onOpenChange, itemTypes, onCreated }: C
     }
 
     toast.success("Item created");
-    handleOpenChange(false);
+    onOpenChange(false);
     onCreated();
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>New Item</DialogTitle>
@@ -144,13 +164,22 @@ export function CreateItemDialog({ open, onOpenChange, itemTypes, onCreated }: C
           {showContent && (
             <div className="space-y-1.5">
               <Label htmlFor="new-item-content">Content</Label>
-              <Textarea
-                id="new-item-content"
-                value={form.content}
-                onChange={(event) => setForm((f) => ({ ...f, content: event.target.value }))}
-                rows={8}
-                className="font-mono text-xs"
-              />
+              {codeEditorFallbackLanguage ? (
+                <CodeEditor
+                  value={form.content}
+                  onChange={(content) => setForm((f) => ({ ...f, content }))}
+                  language={form.language}
+                  fallbackLanguage={codeEditorFallbackLanguage}
+                />
+              ) : (
+                <Textarea
+                  id="new-item-content"
+                  value={form.content}
+                  onChange={(event) => setForm((f) => ({ ...f, content: event.target.value }))}
+                  rows={8}
+                  className="font-mono text-xs"
+                />
+              )}
             </div>
           )}
 
@@ -178,7 +207,7 @@ export function CreateItemDialog({ open, onOpenChange, itemTypes, onCreated }: C
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => handleOpenChange(false)} disabled={isSaving}>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={isSaving || !canSubmit}>
