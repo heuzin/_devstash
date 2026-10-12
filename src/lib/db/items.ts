@@ -13,7 +13,10 @@ export interface ItemSummary {
   isPinned: boolean;
   createdAt: Date;
   tags: string[];
+  fileUrl: string | null;
+  fileName: string | null;
   itemType: {
+    name: string;
     icon: string;
     color: string;
   };
@@ -27,7 +30,9 @@ function toItemSummary(item: {
   isPinned: boolean;
   createdAt: Date;
   tags: { name: string }[];
-  itemType: { icon: string; color: string };
+  fileUrl: string | null;
+  fileName: string | null;
+  itemType: { name: string; icon: string; color: string };
 }): ItemSummary {
   return {
     id: item.id,
@@ -37,7 +42,9 @@ function toItemSummary(item: {
     isPinned: item.isPinned,
     createdAt: item.createdAt,
     tags: item.tags.map((tag) => tag.name),
-    itemType: { icon: item.itemType.icon, color: item.itemType.color },
+    fileUrl: item.fileUrl,
+    fileName: item.fileName,
+    itemType: { name: item.itemType.name, icon: item.itemType.icon, color: item.itemType.color },
   };
 }
 

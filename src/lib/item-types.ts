@@ -27,3 +27,6 @@ export const CODE_EDITOR_FALLBACK_LANGUAGE: Record<string, string> = {
 // Types whose content renders in the MarkdownEditor (Write/Preview tabs)
 // instead of a plain Textarea.
 export const MARKDOWN_EDITOR_TYPE_NAMES = new Set(["note", "prompt"]);
+
+// The type whose items render as an ImageThumbnailCard instead of ItemCard.
+export const IMAGE_TYPE_NAME = "image";
