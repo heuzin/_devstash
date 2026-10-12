@@ -30,3 +30,6 @@ export const MARKDOWN_EDITOR_TYPE_NAMES = new Set(["note", "prompt"]);
 
 // The type whose items render as an ImageThumbnailCard instead of ItemCard.
 export const IMAGE_TYPE_NAME = "image";
+
+// The type whose items render as a single-column FileList instead of ItemGrid.
+export const FILE_TYPE_NAME = "file";

@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import { AddTypeItemButton } from "@/components/items/add-type-item-button";
+import { FileList } from "@/components/items/file-list";
 import { ItemGrid } from "@/components/items/item-grid";
 import { getItemsByTypeSlug } from "@/lib/db/items";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
-import { CREATABLE_ITEM_TYPE_NAMES } from "@/lib/item-types";
+import { CREATABLE_ITEM_TYPE_NAMES, FILE_TYPE_NAME } from "@/lib/item-types";
 
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -32,7 +33,7 @@ export default async function ItemsByTypePage({ params }: PageProps<"/items/[typ
         )}
       </div>
 
-      <ItemGrid items={items} />
+      {itemType.name === FILE_TYPE_NAME ? <FileList items={items} /> : <ItemGrid items={items} />}
     </div>
   );
 }

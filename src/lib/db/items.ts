@@ -15,6 +15,7 @@ export interface ItemSummary {
   tags: string[];
   fileUrl: string | null;
   fileName: string | null;
+  fileSize: number | null;
   itemType: {
     name: string;
     icon: string;
@@ -32,6 +33,7 @@ function toItemSummary(item: {
   tags: { name: string }[];
   fileUrl: string | null;
   fileName: string | null;
+  fileSize: number | null;
   itemType: { name: string; icon: string; color: string };
 }): ItemSummary {
   return {
@@ -44,6 +46,7 @@ function toItemSummary(item: {
     tags: item.tags.map((tag) => tag.name),
     fileUrl: item.fileUrl,
     fileName: item.fileName,
+    fileSize: item.fileSize,
     itemType: { name: item.itemType.name, icon: item.itemType.icon, color: item.itemType.color },
   };
 }
