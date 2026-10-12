@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { CodeEditor } from "@/components/items/code-editor";
 import { MarkdownEditor } from "@/components/items/markdown-editor";
+import { FileUpload, type UploadedFile } from "@/components/items/file-upload";
 import { createItem } from "@/actions/items";
 import type { ItemTypeSummary } from "@/lib/db/items";
 import {
@@ -24,8 +25,10 @@ import {
   CREATABLE_ITEM_TYPE_NAMES,
   LANGUAGE_TYPE_NAMES,
   MARKDOWN_EDITOR_TYPE_NAMES,
+  UPLOAD_TYPE_NAMES,
   URL_TYPE_NAMES,
 } from "@/lib/item-types";
+import type { UploadKind } from "@/lib/upload-constraints";
 
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -52,6 +55,7 @@ export function CreateItemDialog({
 
   const [itemTypeId, setItemTypeId] = useState(preselectedItemTypeId ?? creatableTypes[0]?.id ?? "");
   const [form, setForm] = useState(EMPTY_FORM);
+  const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Reset the form to a fresh state (optionally preselecting a type) every
@@ -62,6 +66,7 @@ export function CreateItemDialog({
     if (open) {
       setItemTypeId(preselectedItemTypeId ?? creatableTypes[0]?.id ?? "");
       setForm(EMPTY_FORM);
+      setUploadedFile(null);
     }
   }
 
@@ -69,13 +74,17 @@ export function CreateItemDialog({
   const showContent = selectedType ? CONTENT_TYPE_NAMES.has(selectedType.name) : false;
   const showLanguage = selectedType ? LANGUAGE_TYPE_NAMES.has(selectedType.name) : false;
   const showUrl = selectedType ? URL_TYPE_NAMES.has(selectedType.name) : false;
+  const showUpload = selectedType ? UPLOAD_TYPE_NAMES.has(selectedType.name) : false;
   const codeEditorFallbackLanguage = selectedType
     ? CODE_EDITOR_FALLBACK_LANGUAGE[selectedType.name]
     : undefined;
   const showMarkdownEditor = selectedType ? MARKDOWN_EDITOR_TYPE_NAMES.has(selectedType.name) : false;
 
   const canSubmit =
-    form.title.trim().length > 0 && itemTypeId.length > 0 && (!showUrl || form.url.trim().length > 0);
+    form.title.trim().length > 0 &&
+    itemTypeId.length > 0 &&
+    (!showUrl || form.url.trim().length > 0) &&
+    (!showUpload || uploadedFile !== null);
 
   async function handleSubmit() {
     const tags = form.tagsInput
@@ -91,6 +100,9 @@ export function CreateItemDialog({
       content: showContent ? form.content || null : null,
       language: showLanguage ? form.language.trim() || null : null,
       url: showUrl ? form.url.trim() || null : null,
+      fileUrl: showUpload ? uploadedFile?.fileUrl ?? null : null,
+      fileName: showUpload ? uploadedFile?.fileName ?? null : null,
+      fileSize: showUpload ? uploadedFile?.fileSize ?? null : null,
       tags,
     });
     setIsSaving(false);
@@ -160,6 +172,17 @@ export function CreateItemDialog({
                 value={form.url}
                 onChange={(event) => setForm((f) => ({ ...f, url: event.target.value }))}
                 placeholder="https://"
+              />
+            </div>
+          )}
+
+          {showUpload && selectedType && (
+            <div className="space-y-1.5">
+              <Label>File</Label>
+              <FileUpload
+                kind={selectedType.name as UploadKind}
+                value={uploadedFile}
+                onChange={setUploadedFile}
               />
             </div>
           )}

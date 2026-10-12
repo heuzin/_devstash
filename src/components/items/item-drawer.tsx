@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Calendar, Copy, FolderOpen, Pencil, Pin, Star, Tag, Trash2 } from "lucide-react";
+import { Calendar, Copy, Download, FolderOpen, Pencil, Pin, Star, Tag, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +35,7 @@ import {
   MARKDOWN_EDITOR_TYPE_NAMES,
   URL_TYPE_NAMES,
 } from "@/lib/item-types";
+import { formatFileSize } from "@/lib/upload-constraints";
 
 function formatDate(date: string | Date) {
   return new Date(date).toLocaleDateString("en-US", {
@@ -194,6 +195,18 @@ function ItemViewBody({
             <Copy className="size-4" />
             Copy
           </Button>
+          {item.itemType.name === "file" && item.fileUrl && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              nativeButton={false}
+              render={<a href={`/api/items/${item.id}/download`} download={item.fileName ?? undefined} />}
+            >
+              <Download className="size-4" />
+              Download
+            </Button>
+          )}
           <div className="ml-auto flex items-center gap-1">
             <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={onEdit}>
               <Pencil className="size-4" />
@@ -305,10 +318,38 @@ function ItemContentSection({ item }: { item: ItemDetail }) {
   }
 
   if (item.contentType === "FILE") {
+    if (!item.fileUrl) {
+      return (
+        <section className="space-y-1.5">
+          <h3 className="text-sm font-medium text-muted-foreground">File</h3>
+          <p className="text-sm text-muted-foreground">No file uploaded yet</p>
+        </section>
+      );
+    }
+
+    if (item.itemType.name === "image") {
+      return (
+        <section className="space-y-1.5">
+          <h3 className="text-sm font-medium text-muted-foreground">Image</h3>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={item.fileUrl}
+            alt={item.fileName ?? item.title}
+            className="max-h-80 w-full rounded-lg border border-border object-contain"
+          />
+        </section>
+      );
+    }
+
     return (
       <section className="space-y-1.5">
         <h3 className="text-sm font-medium text-muted-foreground">File</h3>
-        <p className="text-sm text-muted-foreground">{item.fileName ?? "No file uploaded yet"}</p>
+        <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm">
+          <span className="truncate font-medium">{item.fileName}</span>
+          {item.fileSize !== null && (
+            <span className="shrink-0 text-muted-foreground">{formatFileSize(item.fileSize)}</span>
+          )}
+        </div>
       </section>
     );
   }

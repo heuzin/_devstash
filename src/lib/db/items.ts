@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/db/user";
 import type { ContentType } from "@/generated/prisma/client";
 import type { CreateItemInput, UpdateItemInput } from "@/lib/validations/items";
-import { CREATABLE_ITEM_TYPE_NAMES, URL_TYPE_NAMES } from "@/lib/item-types";
+import { CREATABLE_ITEM_TYPE_NAMES, UPLOAD_TYPE_NAMES, URL_TYPE_NAMES } from "@/lib/item-types";
+import { R2_PUBLIC_URL, deleteFromR2, keyFromFileUrl } from "@/lib/r2";
 
 export interface ItemSummary {
   id: string;
@@ -204,16 +205,29 @@ export async function createItem(userId: string, data: CreateItemInput): Promise
     throw new Error("URL is required for links");
   }
 
-  const contentType: ContentType = isUrlType ? "URL" : "TEXT";
+  const isUploadType = UPLOAD_TYPE_NAMES.has(itemType.name);
+  if (isUploadType) {
+    if (!data.fileUrl || !data.fileName || !data.fileSize) {
+      throw new Error("A file upload is required for this type");
+    }
+    if (!data.fileUrl.startsWith(`${R2_PUBLIC_URL}/`)) {
+      throw new Error("Invalid file upload");
+    }
+  }
+
+  const contentType: ContentType = isUrlType ? "URL" : isUploadType ? "FILE" : "TEXT";
 
   const item = await prisma.item.create({
     data: {
       title: data.title,
       description: data.description ?? null,
       contentType,
-      content: isUrlType ? null : (data.content ?? null),
+      content: isUrlType || isUploadType ? null : (data.content ?? null),
       url: isUrlType ? data.url : null,
       language: data.language ?? null,
+      fileUrl: isUploadType ? data.fileUrl : null,
+      fileName: isUploadType ? data.fileName : null,
+      fileSize: isUploadType ? data.fileSize : null,
       userId,
       itemTypeId: itemType.id,
       tags: {
@@ -265,11 +279,21 @@ export async function updateItem(
 export async function deleteItem(userId: string, itemId: string): Promise<boolean> {
   const existing = await prisma.item.findFirst({
     where: { id: itemId, userId },
-    select: { id: true },
+    select: { id: true, contentType: true, fileUrl: true },
   });
   if (!existing) return false;
 
   await prisma.item.delete({ where: { id: itemId } });
+
+  if (existing.contentType === "FILE" && existing.fileUrl) {
+    const key = keyFromFileUrl(existing.fileUrl);
+    if (key) {
+      await deleteFromR2(key).catch((error) => {
+        console.error("Failed to delete R2 object for item", itemId, error);
+      });
+    }
+  }
+
   return true;
 }
 
