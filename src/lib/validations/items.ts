@@ -7,6 +7,9 @@ export const createItemSchema = z.object({
   content: z.string().min(1).nullable().optional(),
   url: z.url("Invalid URL").nullable().optional(),
   language: z.string().trim().min(1).nullable().optional(),
+  fileUrl: z.string().trim().min(1).nullable().optional(),
+  fileName: z.string().trim().min(1).nullable().optional(),
+  fileSize: z.number().int().positive().nullable().optional(),
   tags: z.array(z.string().trim().min(1)),
 });
 
