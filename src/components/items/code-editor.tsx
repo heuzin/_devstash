@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Editor, { type OnMount } from "@monaco-editor/react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCopyToClipboard } from "@/lib/hooks/use-copy-to-clipboard";
 import { resolveMonacoLanguage } from "@/lib/monaco-languages";
 
 const MIN_HEIGHT = 100;
@@ -27,7 +28,7 @@ export function CodeEditor({
   placeholder,
 }: CodeEditorProps) {
   const [height, setHeight] = useState(MIN_HEIGHT);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
 
   const monacoLanguage = resolveMonacoLanguage(language, fallbackLanguage);
@@ -62,12 +63,6 @@ export function CodeEditor({
     editor.onDidContentSizeChange(() => syncHeight(editor));
   };
 
-  async function handleCopy() {
-    await navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
-
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-[#18181b]">
       <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
@@ -83,7 +78,7 @@ export function CodeEditor({
             variant="ghost"
             size="icon-xs"
             className="text-zinc-400 hover:bg-white/10 hover:text-zinc-100"
-            onClick={handleCopy}
+            onClick={() => copy(value)}
             aria-label="Copy code"
           >
             {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}

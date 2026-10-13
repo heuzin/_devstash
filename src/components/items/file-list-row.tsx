@@ -2,30 +2,19 @@
 
 import { Download, FileIcon, Pin, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useItemDrawer } from "@/components/items/item-drawer-provider";
 import type { ItemSummary } from "@/lib/db/items";
 import { FILE_EXTENSION_ICONS, getFileExtension } from "@/lib/file-extension-icons";
+import { formatShortDateWithYear } from "@/lib/format-date";
+import { useItemActivation } from "@/lib/hooks/use-item-activation";
 import { formatFileSize } from "@/lib/upload-constraints";
 
-function formatDate(date: Date) {
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
 export function FileListRow({ item }: { item: ItemSummary }) {
-  const { openItem } = useItemDrawer();
+  const activation = useItemActivation(item.id);
   const Icon = FILE_EXTENSION_ICONS[getFileExtension(item.fileName)] ?? FileIcon;
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={() => openItem(item.id)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          openItem(item.id);
-        }
-      }}
+      {...activation}
       className="flex cursor-pointer flex-col gap-2 border-b px-3 py-3 transition-colors last:border-b-0 hover:bg-accent/50 sm:flex-row sm:items-center sm:gap-4"
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -40,7 +29,7 @@ export function FileListRow({ item }: { item: ItemSummary }) {
         <span className="w-16 shrink-0 text-right">
           {item.fileSize !== null ? formatFileSize(item.fileSize) : "—"}
         </span>
-        <span className="w-24 shrink-0 text-right">{formatDate(item.createdAt)}</span>
+        <span className="w-24 shrink-0 text-right">{formatShortDateWithYear(item.createdAt)}</span>
         <Button
           variant="ghost"
           size="icon"

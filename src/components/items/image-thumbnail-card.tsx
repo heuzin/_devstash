@@ -2,23 +2,15 @@
 
 import { Pin, Star } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { useItemDrawer } from "@/components/items/item-drawer-provider";
 import type { ItemSummary } from "@/lib/db/items";
+import { useItemActivation } from "@/lib/hooks/use-item-activation";
 
 export function ImageThumbnailCard({ item }: { item: ItemSummary }) {
-  const { openItem } = useItemDrawer();
+  const activation = useItemActivation(item.id);
 
   return (
     <Card
-      role="button"
-      tabIndex={0}
-      onClick={() => openItem(item.id)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          openItem(item.id);
-        }
-      }}
+      {...activation}
       className="cursor-pointer transition-colors hover:bg-accent/50"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}

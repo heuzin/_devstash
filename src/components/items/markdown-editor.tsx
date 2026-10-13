@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCopyToClipboard } from "@/lib/hooks/use-copy-to-clipboard";
 
 const MIN_HEIGHT = 100;
 const MAX_HEIGHT = 400;
@@ -19,7 +20,7 @@ interface MarkdownEditorProps {
 
 export function MarkdownEditor({ value, onChange, readOnly = false, placeholder }: MarkdownEditorProps) {
   const [tab, setTab] = useState<"write" | "preview">("write");
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -29,19 +30,13 @@ export function MarkdownEditor({ value, onChange, readOnly = false, placeholder 
     el.style.height = `${Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, el.scrollHeight))}px`;
   }, [value, tab]);
 
-  async function handleCopy() {
-    await navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
-
   const copyButton = (
     <Button
       type="button"
       variant="ghost"
       size="icon-xs"
       className="text-zinc-400 hover:bg-white/10 hover:text-zinc-100"
-      onClick={handleCopy}
+      onClick={() => copy(value)}
       aria-label="Copy markdown"
     >
       {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}

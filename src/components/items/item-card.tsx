@@ -6,18 +6,16 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useItemDrawer } from "@/components/items/item-drawer-provider";
 import type { ItemDetail, ItemSummary } from "@/lib/db/items";
+import { formatShortDate } from "@/lib/format-date";
+import { useCopyToClipboard } from "@/lib/hooks/use-copy-to-clipboard";
+import { useItemActivation } from "@/lib/hooks/use-item-activation";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
-
-function formatDate(date: Date) {
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
 
 export function ItemCard({ item }: { item: ItemSummary }) {
   const Icon = ITEM_TYPE_ICONS[item.itemType.icon];
-  const { openItem } = useItemDrawer();
-  const [copied, setCopied] = useState(false);
+  const activation = useItemActivation(item.id);
+  const { copied, copy } = useCopyToClipboard();
   const [copying, setCopying] = useState(false);
 
   async function handleCopy(event: React.MouseEvent) {
@@ -32,9 +30,7 @@ export function ItemCard({ item }: { item: ItemSummary }) {
       const textToCopy = body.data.contentType === "URL" ? body.data.url : body.data.content;
       if (!textToCopy) throw new Error("Nothing to copy");
 
-      await navigator.clipboard.writeText(textToCopy);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      await copy(textToCopy);
     } catch {
       toast.error("Couldn't copy this item. Please try again.");
     } finally {
@@ -44,15 +40,7 @@ export function ItemCard({ item }: { item: ItemSummary }) {
 
   return (
     <Card
-      role="button"
-      tabIndex={0}
-      onClick={() => openItem(item.id)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          openItem(item.id);
-        }
-      }}
+      {...activation}
       className="h-full cursor-pointer border-l-4 transition-colors hover:bg-accent/50"
       style={{ borderLeftColor: item.itemType.color }}
     >
@@ -69,7 +57,7 @@ export function ItemCard({ item }: { item: ItemSummary }) {
             )}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">{formatDate(item.createdAt)}</span>
+            <span className="text-xs text-muted-foreground">{formatShortDate(item.createdAt)}</span>
             <Button
               type="button"
               variant="ghost"

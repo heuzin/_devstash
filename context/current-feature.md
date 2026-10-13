@@ -1,18 +1,30 @@
-# Current Feature
+# Current Feature: Code Quality Cleanup
 
-<!-- Feature name and short description -->
+Pure refactors surfaced by a code-scanner audit: dead code removal, de-duplication, and splitting up the oversized item drawer. No behavior changes.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- ~~Delete `src/lib/mock-data.ts`~~ — skipped, user asked to keep this file
+- Extract `capitalize()` into `src/lib/utils.ts`; remove the duplicate copies in `item-drawer.tsx` and `create-item-dialog.tsx`
+- Extract a `parseTagsInput(value: string): string[]` utility; remove the duplicate comma-split/trim/filter logic in `item-drawer.tsx` and `create-item-dialog.tsx`
+- Consolidate the four different `formatDate` implementations (`item-drawer.tsx`, `file-list-row.tsx`, `item-card.tsx`, `item-list.tsx`) into named exports in `src/lib/format-date.ts`
+- Extract a `useCopyToClipboard()` hook (copied state + 1.5s revert); reuse in `code-editor.tsx`, `markdown-editor.tsx`, `item-card.tsx`
+- Extract a shared "activate on click/Enter/Space to open the item drawer" hook or wrapper; reuse in `item-card.tsx`, `image-thumbnail-card.tsx`, `file-list-row.tsx`
+- Split `item-drawer.tsx` (573 lines) into smaller, single-purpose files under `src/components/items/drawer/`:
+  - Pull the delete-confirmation `AlertDialog` out of `ItemViewBody` into its own `DeleteItemDialog` component
+  - Pull the Favorite/Pin/Copy/Edit/Delete action bar out of `ItemViewBody` into its own `ItemActionBar` component
+  - Extract a shared `ItemContentField` component (CodeEditor vs MarkdownEditor vs plain Textarea branch) reused by both `ItemEditView` and `CreateItemDialog`, removing that duplication at the same time
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Scope is explicitly code-quality only — no changes to validation rules, auth/ownership checks, query limits, or upload handling (those were separate audit findings, deliberately excluded here per user decision)
+- No behavior change intended anywhere; verify via Playwright that the item drawer (view/edit/delete), item cards, and the create-item dialog all still work identically after the split
+- Where logic moves into a genuinely testable utility (`formatDate`, `parseTagsInput`, `capitalize`), add Vitest coverage per `context/coding-standards.md`'s testing conventions; hooks/components stay out of scope for unit tests per that same doc
+- Run `npm run lint`, `npm run build`, and `npm run test` before considering this done
 
 ## History
 

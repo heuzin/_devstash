@@ -14,25 +14,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CodeEditor } from "@/components/items/code-editor";
-import { MarkdownEditor } from "@/components/items/markdown-editor";
+import { ItemContentField } from "@/components/items/drawer/item-content-field";
 import { FileUpload, type UploadedFile } from "@/components/items/file-upload";
 import { createItem } from "@/actions/items";
 import type { ItemTypeSummary } from "@/lib/db/items";
 import {
-  CODE_EDITOR_FALLBACK_LANGUAGE,
   CONTENT_TYPE_NAMES,
   CREATABLE_ITEM_TYPE_NAMES,
   LANGUAGE_TYPE_NAMES,
-  MARKDOWN_EDITOR_TYPE_NAMES,
   UPLOAD_TYPE_NAMES,
   URL_TYPE_NAMES,
 } from "@/lib/item-types";
+import { parseTagsInput } from "@/lib/tags";
+import { capitalize } from "@/lib/utils";
 import type { UploadKind } from "@/lib/upload-constraints";
-
-function capitalize(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
 
 const EMPTY_FORM = { title: "", description: "", content: "", language: "", url: "", tagsInput: "" };
 
@@ -75,10 +70,6 @@ export function CreateItemDialog({
   const showLanguage = selectedType ? LANGUAGE_TYPE_NAMES.has(selectedType.name) : false;
   const showUrl = selectedType ? URL_TYPE_NAMES.has(selectedType.name) : false;
   const showUpload = selectedType ? UPLOAD_TYPE_NAMES.has(selectedType.name) : false;
-  const codeEditorFallbackLanguage = selectedType
-    ? CODE_EDITOR_FALLBACK_LANGUAGE[selectedType.name]
-    : undefined;
-  const showMarkdownEditor = selectedType ? MARKDOWN_EDITOR_TYPE_NAMES.has(selectedType.name) : false;
 
   const canSubmit =
     form.title.trim().length > 0 &&
@@ -87,11 +78,6 @@ export function CreateItemDialog({
     (!showUpload || uploadedFile !== null);
 
   async function handleSubmit() {
-    const tags = form.tagsInput
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0);
-
     setIsSaving(true);
     const result = await createItem({
       itemTypeId,
@@ -103,7 +89,7 @@ export function CreateItemDialog({
       fileUrl: showUpload ? uploadedFile?.fileUrl ?? null : null,
       fileName: showUpload ? uploadedFile?.fileName ?? null : null,
       fileSize: showUpload ? uploadedFile?.fileSize ?? null : null,
-      tags,
+      tags: parseTagsInput(form.tagsInput),
     });
     setIsSaving(false);
 
@@ -187,30 +173,16 @@ export function CreateItemDialog({
             </div>
           )}
 
-          {showContent && (
+          {showContent && selectedType && (
             <div className="space-y-1.5">
               <Label htmlFor="new-item-content">Content</Label>
-              {codeEditorFallbackLanguage ? (
-                <CodeEditor
-                  value={form.content}
-                  onChange={(content) => setForm((f) => ({ ...f, content }))}
-                  language={form.language}
-                  fallbackLanguage={codeEditorFallbackLanguage}
-                />
-              ) : showMarkdownEditor ? (
-                <MarkdownEditor
-                  value={form.content}
-                  onChange={(content) => setForm((f) => ({ ...f, content }))}
-                />
-              ) : (
-                <Textarea
-                  id="new-item-content"
-                  value={form.content}
-                  onChange={(event) => setForm((f) => ({ ...f, content: event.target.value }))}
-                  rows={8}
-                  className="font-mono text-xs"
-                />
-              )}
+              <ItemContentField
+                typeName={selectedType.name}
+                value={form.content}
+                onChange={(content) => setForm((f) => ({ ...f, content }))}
+                language={form.language}
+                textareaId="new-item-content"
+              />
             </div>
           )}
 
