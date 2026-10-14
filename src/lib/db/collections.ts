@@ -92,6 +92,13 @@ export async function getRecentCollections(limit = 6): Promise<CollectionSummary
   return queryCollectionSummaries({ userId }, limit);
 }
 
+export async function getAllCollections(): Promise<CollectionSummary[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  return queryCollectionSummaries({ userId });
+}
+
 export interface SidebarCollections {
   favorites: CollectionSummary[];
   recent: CollectionSummary[];

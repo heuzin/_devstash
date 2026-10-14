@@ -122,6 +122,35 @@ export async function getItemsByTypeSlug(slug: string): Promise<ItemsByType | nu
   };
 }
 
+export interface CollectionItems {
+  collection: {
+    id: string;
+    name: string;
+    description: string | null;
+    isFavorite: boolean;
+  };
+  items: ItemSummary[];
+}
+
+export async function getCollectionItems(collectionId: string): Promise<CollectionItems | null> {
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+
+  const collection = await prisma.collection.findFirst({
+    where: { id: collectionId, userId },
+    select: { id: true, name: true, description: true, isFavorite: true },
+  });
+  if (!collection) return null;
+
+  const items = await prisma.item.findMany({
+    where: { userId, collections: { some: { collectionId } } },
+    orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
+    include: { itemType: true, tags: true },
+  });
+
+  return { collection, items: items.map(toItemSummary) };
+}
+
 export interface ItemDetail {
   id: string;
   title: string;

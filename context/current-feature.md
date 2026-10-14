@@ -1,18 +1,23 @@
-# Current Feature
+# Current Feature: Collections Pages
 
-<!-- Feature name and short description -->
+Collections list page and a per-collection detail page showing its items.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- `/collections` page lists all of the signed-in user's collections (reuse the existing collection card used on the dashboard)
+- `/collections/[id]` page shows a single collection's items, using the existing item cards/grid (`ItemGrid`/`ItemCard`, `ImageThumbnailCard` for images, `FileList` for files — whatever the type-specific list pages already use)
+- Sidebar's "View all collections" link points to `/collections` (currently inert/unlinked or pointing nowhere)
+- Every collection card (dashboard grid, sidebar, and the new `/collections` list) links to its own `/collections/[id]` page
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Reuse existing components/patterns rather than building new card variants — mirror how `/items/[type]` already branches between `ItemGrid`, `ImageThumbnailCard` gallery, and `FileList`
+- `/collections/[id]` needs auth/ownership checks server-side (404 or redirect if the collection isn't the signed-in user's), matching the pattern used by `/items/[type]`
+- Scope is read/navigation only — no collection edit/delete/rename in this pass unless trivial to include
 
 ## History
 
