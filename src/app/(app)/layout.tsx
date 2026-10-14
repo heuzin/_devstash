@@ -4,16 +4,17 @@ import { VerifyEmailBanner } from "@/components/dashboard/verify-email-banner";
 import { CreateCollectionDialogProvider } from "@/components/collections/create-collection-dialog-provider";
 import { CreateItemDialogProvider } from "@/components/items/create-item-dialog-provider";
 import { ItemDrawerProvider } from "@/components/items/item-drawer-provider";
-import { getSidebarCollections } from "@/lib/db/collections";
+import { getCollectionOptions, getSidebarCollections } from "@/lib/db/collections";
 import { getItemTypesWithCounts } from "@/lib/db/items";
 import { getCurrentUser } from "@/lib/db/user";
 import { isEmailVerificationEnabled } from "@/lib/email-verification";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const [itemTypes, { favorites, recent }, user] = await Promise.all([
+  const [itemTypes, { favorites, recent }, user, collections] = await Promise.all([
     getItemTypesWithCounts(),
     getSidebarCollections(),
     getCurrentUser(),
+    getCollectionOptions(),
   ]);
 
   const sidebar = (
@@ -27,9 +28,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <CreateCollectionDialogProvider>
-      <CreateItemDialogProvider itemTypes={itemTypes}>
+      <CreateItemDialogProvider itemTypes={itemTypes} collections={collections}>
         <DashboardChrome sidebar={sidebar}>
-          <ItemDrawerProvider>
+          <ItemDrawerProvider collections={collections}>
             {isEmailVerificationEnabled() && user && !user.emailVerified && <VerifyEmailBanner />}
             {children}
           </ItemDrawerProvider>

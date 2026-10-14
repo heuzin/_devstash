@@ -35,6 +35,7 @@ const VALID_INPUT = {
   language: "typescript",
   url: null,
   tags: ["react", "hooks"],
+  collectionIds: [],
 };
 
 const DB_ITEM = {
@@ -62,6 +63,9 @@ beforeEach(() => {
   authMock.mockReset();
   deleteFromR2Mock.mockReset();
   deleteFromR2Mock.mockResolvedValue(undefined);
+  prismaMock.$transaction.mockImplementation((arg) =>
+    typeof arg === "function" ? arg(prismaMock) : Promise.all(arg as Promise<unknown>[]),
+  );
 });
 
 describe("createItem", () => {
@@ -229,6 +233,54 @@ describe("createItem", () => {
       ],
     });
   });
+
+  it("only connects collections owned by the signed-in user", async () => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue({ user: { id: USER_ID } });
+    prismaMock.itemType.findFirst.mockResolvedValue({
+      id: TYPE_ID,
+      name: "snippet",
+      slug: "snippets",
+      icon: "Code",
+      color: "#3b82f6",
+    } as never);
+    // "col_evil" belongs to someone else and isn't returned here.
+    prismaMock.collection.findMany.mockResolvedValue([{ id: "col_1" }] as never);
+    prismaMock.item.create.mockResolvedValue(DB_ITEM as never);
+
+    const result = await createItem({
+      ...VALID_CREATE_INPUT,
+      collectionIds: ["col_1", "col_evil"],
+    });
+
+    expect(result.success).toBe(true);
+    expect(prismaMock.collection.findMany).toHaveBeenCalledWith({
+      where: { userId: USER_ID, id: { in: ["col_1", "col_evil"] } },
+      select: { id: true },
+    });
+
+    const createArgs = prismaMock.item.create.mock.calls[0][0];
+    expect(createArgs.data.collections).toEqual({ create: [{ collectionId: "col_1" }] });
+  });
+
+  it("skips the collection ownership query when no collections are selected", async () => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue({ user: { id: USER_ID } });
+    prismaMock.itemType.findFirst.mockResolvedValue({
+      id: TYPE_ID,
+      name: "snippet",
+      slug: "snippets",
+      icon: "Code",
+      color: "#3b82f6",
+    } as never);
+    prismaMock.item.create.mockResolvedValue(DB_ITEM as never);
+
+    await createItem(VALID_CREATE_INPUT);
+
+    expect(prismaMock.collection.findMany).not.toHaveBeenCalled();
+    const createArgs = prismaMock.item.create.mock.calls[0][0];
+    expect(createArgs.data.collections).toEqual({ create: [] });
+  });
 });
 
 describe("updateItem", () => {
@@ -305,6 +357,30 @@ describe("updateItem", () => {
           create: { name: "hooks", userId: USER_ID },
         },
       ],
+    });
+  });
+
+  it("syncs collections to only the owned ids, removing unselected ones and adding newly selected ones", async () => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue({ user: { id: USER_ID } });
+    prismaMock.item.findFirst.mockResolvedValue({ id: ITEM_ID } as never);
+    // "col_evil" belongs to someone else and isn't returned here.
+    prismaMock.collection.findMany.mockResolvedValue([{ id: "col_2" }] as never);
+    prismaMock.item.update.mockResolvedValue(DB_ITEM as never);
+
+    const result = await updateItem(ITEM_ID, { ...VALID_INPUT, collectionIds: ["col_2", "col_evil"] });
+
+    expect(result.success).toBe(true);
+    expect(prismaMock.collection.findMany).toHaveBeenCalledWith({
+      where: { userId: USER_ID, id: { in: ["col_2", "col_evil"] } },
+      select: { id: true },
+    });
+    expect(prismaMock.itemCollection.deleteMany).toHaveBeenCalledWith({
+      where: { itemId: ITEM_ID, collectionId: { notIn: ["col_2"] } },
+    });
+    expect(prismaMock.itemCollection.createMany).toHaveBeenCalledWith({
+      data: [{ itemId: ITEM_ID, collectionId: "col_2" }],
+      skipDuplicates: true,
     });
   });
 });

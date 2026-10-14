@@ -3,15 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { FolderOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CollectionPicker } from "@/components/items/collection-picker";
 import { ItemContentField } from "@/components/items/drawer/item-content-field";
 import { ItemDetailsSection } from "@/components/items/drawer/item-details-section";
 import { updateItem } from "@/actions/items";
+import type { CollectionOption } from "@/lib/db/collections";
 import type { ItemDetail } from "@/lib/db/items";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
 import { CONTENT_TYPE_NAMES, LANGUAGE_TYPE_NAMES, URL_TYPE_NAMES } from "@/lib/item-types";
@@ -20,11 +21,12 @@ import { capitalize } from "@/lib/utils";
 
 interface ItemEditViewProps {
   item: ItemDetail;
+  collections: CollectionOption[];
   onCancel: () => void;
   onSaved: (item: ItemDetail) => void;
 }
 
-export function ItemEditView({ item, onCancel, onSaved }: ItemEditViewProps) {
+export function ItemEditView({ item, collections, onCancel, onSaved }: ItemEditViewProps) {
   const router = useRouter();
   const Icon = ITEM_TYPE_ICONS[item.itemType.icon];
   const typeName = item.itemType.name;
@@ -38,6 +40,7 @@ export function ItemEditView({ item, onCancel, onSaved }: ItemEditViewProps) {
   const [language, setLanguage] = useState(item.language ?? "");
   const [url, setUrl] = useState(item.url ?? "");
   const [tagsInput, setTagsInput] = useState(item.tags.join(", "));
+  const [collectionIds, setCollectionIds] = useState(item.collections.map((c) => c.id));
   const [isSaving, setIsSaving] = useState(false);
 
   async function handleSave() {
@@ -49,6 +52,7 @@ export function ItemEditView({ item, onCancel, onSaved }: ItemEditViewProps) {
       language: showLanguage ? language.trim() || null : null,
       url: showUrl ? url.trim() || null : null,
       tags: parseTagsInput(tagsInput),
+      collectionIds,
     });
     setIsSaving(false);
 
@@ -152,21 +156,11 @@ export function ItemEditView({ item, onCancel, onSaved }: ItemEditViewProps) {
           />
         </section>
 
-        {item.collections.length > 0 && (
-          <section className="space-y-1.5">
-            <h3 className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-              <FolderOpen className="size-4" />
-              Collections
-            </h3>
-            <div className="flex flex-wrap gap-1.5">
-              {item.collections.map((collection) => (
-                <Badge key={collection.id} variant="secondary">
-                  {collection.name}
-                </Badge>
-              ))}
-            </div>
-          </section>
-        )}
+        <CollectionPicker
+          collections={collections}
+          selectedIds={collectionIds}
+          onChange={setCollectionIds}
+        />
 
         <ItemDetailsSection item={item} />
       </div>

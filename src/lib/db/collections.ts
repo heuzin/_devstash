@@ -112,6 +112,22 @@ export async function getSidebarCollections(
   return { favorites, recent };
 }
 
+export interface CollectionOption {
+  id: string;
+  name: string;
+}
+
+export async function getCollectionOptions(): Promise<CollectionOption[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  return prisma.collection.findMany({
+    where: { userId },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
+}
+
 export interface CollectionStats {
   total: number;
   favorites: number;

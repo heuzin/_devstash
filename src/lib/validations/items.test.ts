@@ -8,6 +8,7 @@ const VALID_INPUT = {
   language: "typescript",
   url: null,
   tags: ["react", "hooks"],
+  collectionIds: ["col_1"],
 };
 
 describe("createItemSchema", () => {
@@ -36,6 +37,16 @@ describe("createItemSchema", () => {
   it("accepts an empty tags array", () => {
     const result = createItemSchema.safeParse({ ...VALID_CREATE_INPUT, tags: [] });
     expect(result.success).toBe(true);
+  });
+
+  it("accepts an empty collectionIds array", () => {
+    const result = createItemSchema.safeParse({ ...VALID_CREATE_INPUT, collectionIds: [] });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a collectionIds array containing empty strings", () => {
+    const result = createItemSchema.safeParse({ ...VALID_CREATE_INPUT, collectionIds: ["col_1", ""] });
+    expect(result.success).toBe(false);
   });
 });
 
@@ -79,5 +90,15 @@ describe("updateItemSchema", () => {
   it("accepts an empty tags array", () => {
     const result = updateItemSchema.safeParse({ ...VALID_INPUT, tags: [] });
     expect(result.success).toBe(true);
+  });
+
+  it("accepts an empty collectionIds array", () => {
+    const result = updateItemSchema.safeParse({ ...VALID_INPUT, collectionIds: [] });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a collectionIds array containing empty strings", () => {
+    const result = updateItemSchema.safeParse({ ...VALID_INPUT, collectionIds: ["col_1", ""] });
+    expect(result.success).toBe(false);
   });
 });

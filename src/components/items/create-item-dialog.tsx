@@ -14,9 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { CollectionPicker } from "@/components/items/collection-picker";
 import { ItemContentField } from "@/components/items/drawer/item-content-field";
 import { FileUpload, type UploadedFile } from "@/components/items/file-upload";
 import { createItem } from "@/actions/items";
+import type { CollectionOption } from "@/lib/db/collections";
 import type { ItemTypeSummary } from "@/lib/db/items";
 import {
   CONTENT_TYPE_NAMES,
@@ -35,6 +37,7 @@ interface CreateItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   itemTypes: ItemTypeSummary[];
+  collections: CollectionOption[];
   preselectedItemTypeId?: string;
   onCreated: () => void;
 }
@@ -43,6 +46,7 @@ export function CreateItemDialog({
   open,
   onOpenChange,
   itemTypes,
+  collections,
   preselectedItemTypeId,
   onCreated,
 }: CreateItemDialogProps) {
@@ -51,6 +55,7 @@ export function CreateItemDialog({
   const [itemTypeId, setItemTypeId] = useState(preselectedItemTypeId ?? creatableTypes[0]?.id ?? "");
   const [form, setForm] = useState(EMPTY_FORM);
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
+  const [collectionIds, setCollectionIds] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   // Reset the form to a fresh state (optionally preselecting a type) every
@@ -62,6 +67,7 @@ export function CreateItemDialog({
       setItemTypeId(preselectedItemTypeId ?? creatableTypes[0]?.id ?? "");
       setForm(EMPTY_FORM);
       setUploadedFile(null);
+      setCollectionIds([]);
     }
   }
 
@@ -90,6 +96,7 @@ export function CreateItemDialog({
       fileName: showUpload ? uploadedFile?.fileName ?? null : null,
       fileSize: showUpload ? uploadedFile?.fileSize ?? null : null,
       tags: parseTagsInput(form.tagsInput),
+      collectionIds,
     });
     setIsSaving(false);
 
@@ -207,6 +214,12 @@ export function CreateItemDialog({
               placeholder="Comma-separated"
             />
           </div>
+
+          <CollectionPicker
+            collections={collections}
+            selectedIds={collectionIds}
+            onChange={setCollectionIds}
+          />
         </div>
 
         <DialogFooter>

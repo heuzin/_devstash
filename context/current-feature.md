@@ -1,18 +1,25 @@
-# Current Feature
+# Current Feature: Add Item to Collections
 
-<!-- Feature name and short description -->
+Add an input to the new/edit item forms where the user can select one or more collections to add the item to.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- `CreateItemDialog` has a multi-select input for collections, so a new item can be added to one or more collections at creation time
+- The item drawer's edit mode has the same multi-select input, so an existing item's collection membership can be changed (added to and removed from collections)
+- `createItem` persists the selected collections via `ItemCollection` rows, scoped to the signed-in user's own collections (reject/ignore any collection ID that isn't owned by the user)
+- `updateItem` can add/remove `ItemCollection` rows to match the new selection (diff against current membership rather than just appending)
+- Multi-select options are populated from the signed-in user's existing collections (no collection creation from within this picker)
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Explicitly out of scope: displaying collection pages/listing items within a collection — that's a separate future feature
+- `Item` <-> `Collection` is already many-to-many via the existing `ItemCollection` join model; no schema/migration change expected
+- Follow existing patterns: Zod validation in `src/lib/validations/items.ts`, `{ success, data, error }` Server Action shape, ownership checks via `findFirst`/`auth()`
+- Reuse shadcn components already in the project (e.g. a checkbox list or multi-select popover) rather than introducing a new UI dependency unless nothing existing fits
 
 ## History
 

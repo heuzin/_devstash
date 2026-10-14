@@ -202,6 +202,19 @@ export async function getItemDetail(id: string): Promise<ItemDetail | null> {
   return toItemDetail(item);
 }
 
+async function filterOwnedCollectionIds(
+  userId: string,
+  collectionIds: string[],
+): Promise<string[]> {
+  if (collectionIds.length === 0) return [];
+
+  const owned = await prisma.collection.findMany({
+    where: { userId, id: { in: collectionIds } },
+    select: { id: true },
+  });
+  return owned.map((collection) => collection.id);
+}
+
 export async function createItem(userId: string, data: CreateItemInput): Promise<ItemDetail> {
   const itemType = await prisma.itemType.findFirst({
     where: { id: data.itemTypeId, isSystem: true },
@@ -226,6 +239,7 @@ export async function createItem(userId: string, data: CreateItemInput): Promise
   }
 
   const contentType: ContentType = isUrlType ? "URL" : isUploadType ? "FILE" : "TEXT";
+  const ownedCollectionIds = await filterOwnedCollectionIds(userId, data.collectionIds);
 
   const item = await prisma.item.create({
     data: {
@@ -246,6 +260,9 @@ export async function createItem(userId: string, data: CreateItemInput): Promise
           create: { name, userId },
         })),
       },
+      collections: {
+        create: ownedCollectionIds.map((collectionId) => ({ collectionId })),
+      },
     },
     include: itemDetailInclude,
   });
@@ -264,23 +281,35 @@ export async function updateItem(
   });
   if (!existing) return null;
 
-  const item = await prisma.item.update({
-    where: { id: itemId },
-    data: {
-      title: data.title,
-      description: data.description ?? null,
-      content: data.content ?? null,
-      url: data.url ?? null,
-      language: data.language ?? null,
-      tags: {
-        set: [],
-        connectOrCreate: data.tags.map((name) => ({
-          where: { userId_name: { userId, name } },
-          create: { name, userId },
-        })),
+  const ownedCollectionIds = await filterOwnedCollectionIds(userId, data.collectionIds);
+
+  const item = await prisma.$transaction(async (tx) => {
+    await tx.itemCollection.deleteMany({
+      where: { itemId, collectionId: { notIn: ownedCollectionIds } },
+    });
+    await tx.itemCollection.createMany({
+      data: ownedCollectionIds.map((collectionId) => ({ itemId, collectionId })),
+      skipDuplicates: true,
+    });
+
+    return tx.item.update({
+      where: { id: itemId },
+      data: {
+        title: data.title,
+        description: data.description ?? null,
+        content: data.content ?? null,
+        url: data.url ?? null,
+        language: data.language ?? null,
+        tags: {
+          set: [],
+          connectOrCreate: data.tags.map((name) => ({
+            where: { userId_name: { userId, name } },
+            create: { name, userId },
+          })),
+        },
       },
-    },
-    include: itemDetailInclude,
+      include: itemDetailInclude,
+    });
   });
 
   return toItemDetail(item);

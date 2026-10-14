@@ -11,6 +11,7 @@ export const createItemSchema = z.object({
   fileName: z.string().trim().min(1).nullable().optional(),
   fileSize: z.number().int().positive().nullable().optional(),
   tags: z.array(z.string().trim().min(1)),
+  collectionIds: z.array(z.string().trim().min(1)),
 });
 
 export type CreateItemInput = z.infer<typeof createItemSchema>;
@@ -22,6 +23,7 @@ export const updateItemSchema = z.object({
   url: z.url("Invalid URL").nullable().optional(),
   language: z.string().trim().min(1).nullable().optional(),
   tags: z.array(z.string().trim().min(1)),
+  collectionIds: z.array(z.string().trim().min(1)),
 });
 
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;

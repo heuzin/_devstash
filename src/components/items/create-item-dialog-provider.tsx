@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { CreateItemDialog } from "@/components/items/create-item-dialog";
+import type { CollectionOption } from "@/lib/db/collections";
 import type { ItemTypeSummary } from "@/lib/db/items";
 
 interface CreateItemDialogContextValue {
@@ -21,9 +22,11 @@ export function useCreateItemDialog() {
 
 export function CreateItemDialogProvider({
   itemTypes,
+  collections,
   children,
 }: {
   itemTypes: ItemTypeSummary[];
+  collections: CollectionOption[];
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -44,6 +47,7 @@ export function CreateItemDialogProvider({
         open={open}
         onOpenChange={setOpen}
         itemTypes={itemTypes}
+        collections={collections}
         preselectedItemTypeId={preselectedItemTypeId}
         onCreated={() => router.refresh()}
       />

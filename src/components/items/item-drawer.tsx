@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ItemEditView } from "@/components/items/drawer/item-edit-view";
 import { ItemViewBody } from "@/components/items/drawer/item-view-body";
+import type { CollectionOption } from "@/lib/db/collections";
 import type { ItemDetail } from "@/lib/db/items";
 
 interface ItemDrawerProps {
@@ -13,6 +14,7 @@ interface ItemDrawerProps {
   item: ItemDetail | null;
   loading: boolean;
   error: string | null;
+  collections: CollectionOption[];
   onItemUpdated: (item: ItemDetail) => void;
 }
 
@@ -22,6 +24,7 @@ export function ItemDrawer({
   item,
   loading,
   error,
+  collections,
   onItemUpdated,
 }: ItemDrawerProps) {
   return (
@@ -35,6 +38,7 @@ export function ItemDrawer({
             <ItemDrawerBody
               key={item.id}
               item={item}
+              collections={collections}
               onItemUpdated={onItemUpdated}
               onItemDeleted={() => onOpenChange(false)}
             />
@@ -61,10 +65,12 @@ function ItemDrawerSkeleton() {
 
 function ItemDrawerBody({
   item,
+  collections,
   onItemUpdated,
   onItemDeleted,
 }: {
   item: ItemDetail;
+  collections: CollectionOption[];
   onItemUpdated: (item: ItemDetail) => void;
   onItemDeleted: () => void;
 }) {
@@ -74,6 +80,7 @@ function ItemDrawerBody({
     return (
       <ItemEditView
         item={item}
+        collections={collections}
         onCancel={() => setMode("view")}
         onSaved={(updated) => {
           onItemUpdated(updated);

@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { ItemDrawer } from "@/components/items/item-drawer";
+import type { CollectionOption } from "@/lib/db/collections";
 import type { ItemDetail } from "@/lib/db/items";
 
 interface ItemDrawerContextValue {
@@ -25,7 +26,13 @@ export function useItemDrawer() {
   return context;
 }
 
-export function ItemDrawerProvider({ children }: { children: ReactNode }) {
+export function ItemDrawerProvider({
+  collections,
+  children,
+}: {
+  collections: CollectionOption[];
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const [itemId, setItemId] = useState<string | null>(null);
   const [item, setItem] = useState<ItemDetail | null>(null);
@@ -67,6 +74,7 @@ export function ItemDrawerProvider({ children }: { children: ReactNode }) {
         item={item}
         loading={loading}
         error={error}
+        collections={collections}
         onItemUpdated={setItem}
       />
     </ItemDrawerContext.Provider>
