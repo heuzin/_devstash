@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/db/user";
 import type { Prisma } from "@/generated/prisma/client";
+import type { CreateCollectionInput } from "@/lib/validations/collections";
 
 export interface CollectionTypeSummary {
   itemTypeId: string;
@@ -126,4 +127,28 @@ export async function getCollectionStats(): Promise<CollectionStats> {
   ]);
 
   return { total, favorites };
+}
+
+export async function createCollection(
+  userId: string,
+  data: CreateCollectionInput,
+): Promise<CollectionSummary> {
+  const collection = await prisma.collection.create({
+    data: {
+      userId,
+      name: data.name,
+      description: data.description ?? null,
+    },
+  });
+
+  return {
+    id: collection.id,
+    name: collection.name,
+    description: collection.description,
+    isFavorite: collection.isFavorite,
+    itemCount: 0,
+    accentColor: undefined,
+    types: [],
+    updatedAt: collection.updatedAt,
+  };
 }

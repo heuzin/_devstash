@@ -1,18 +1,34 @@
-# Current Feature
+# Current Feature: Collection Create
 
 <!-- Feature name and short description -->
 
+Add a "New Collection" button in the top bar that opens a modal to create a collection with a name and description.
+
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
 <!-- Bullet points of what success looks like -->
 
+- A "New Collection" button in the top bar opens a modal/dialog (the top bar placeholder for this already exists in `DashboardChrome`)
+- The modal has fields for Name (required) and Description (optional) — collections don't need a type picker or tags, unlike items
+- Submitting calls a `createCollection` Server Action, following the same `{ success, data, error }` pattern as `src/actions/items.ts`
+- A new `src/lib/db/collections.ts` `createCollection` query function performs the actual insert, scoped to the current user (`userId` from `getCurrentUserId`)
+- Collections are user-scoped: server components fetch via `src/lib/db/collections.ts` functions; any client-side calls go through an API route (mirroring `GET /api/items/[id]`), not direct Prisma access
+- Zod validation for the create payload (new `createCollectionSchema` in a `src/lib/validations/collections.ts`, mirroring `src/lib/validations/items.ts`)
+- On success: show a Sonner success toast, close/reset the modal, and refresh so the new collection appears immediately — in the sidebar's recent collections list and on `/collections` / the dashboard grid (reuse the `router.refresh()` pattern from `CreateItemDialog`)
+- On failure: show a Sonner error toast, keep the modal open with entered data intact
+- Follow existing patterns: a `CreateCollectionDialogProvider`/`useCreateCollectionDialog` context mirroring `CreateItemDialogProvider`, wired into `src/app/(app)/layout.tsx`
+
 ## Notes
 
 <!-- Additional context, constraints, or details from spec -->
+
+- Mirror the Item Create feature's architecture (see History entry "Item Create") as closely as possible: shadcn `Dialog`, Zod schema, Server Action calling a `lib/db` function, context provider for open/close state
+- No type selection needed since `Collection` isn't tied to an `ItemType` the way `Item` is (aside from the existing optional `defaultTypeId`, which isn't part of this feature — leave it null/unset for now unless it's trivial to wire up)
+- Scope is create only; editing/deleting collections is out of scope for this feature
 
 ## History
 

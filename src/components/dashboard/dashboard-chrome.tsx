@@ -5,6 +5,7 @@ import { FolderPlus, Layers, PanelLeft, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useCreateCollectionDialog } from "@/components/collections/create-collection-dialog-provider";
 import { useCreateItemDialog } from "@/components/items/create-item-dialog-provider";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { open: openCreateItemDialog } = useCreateItemDialog();
+  const { open: openCreateCollectionDialog } = useCreateCollectionDialog();
 
   function toggleSidebar() {
     if (window.matchMedia("(min-width: 768px)").matches) {
@@ -43,7 +45,7 @@ export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
           <Input placeholder="Search items..." className="pl-9" />
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => openCreateCollectionDialog()}>
             <FolderPlus className="size-4" />
             New Collection
           </Button>
