@@ -1,5 +1,5 @@
-import { Star } from "lucide-react";
 import { notFound } from "next/navigation";
+import { CollectionDetailActions } from "@/components/collections/collection-detail-actions";
 import { FileList } from "@/components/items/file-list";
 import { ImageThumbnailCard } from "@/components/items/image-thumbnail-card";
 import { ItemGrid } from "@/components/items/item-grid";
@@ -23,17 +23,15 @@ export default async function CollectionDetailPage({ params }: PageProps<"/colle
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="flex items-center gap-1.5">
+      <div className="flex items-start justify-between gap-2">
+        <div>
           <h1 className="text-2xl font-semibold">{collection.name}</h1>
-          {collection.isFavorite && (
-            <Star className="size-4 fill-yellow-400 text-yellow-400" />
+          {collection.description && (
+            <p className="text-sm text-muted-foreground">{collection.description}</p>
           )}
+          <p className="text-sm text-muted-foreground">{items.length} items</p>
         </div>
-        {collection.description && (
-          <p className="text-sm text-muted-foreground">{collection.description}</p>
-        )}
-        <p className="text-sm text-muted-foreground">{items.length} items</p>
+        <CollectionDetailActions collection={collection} />
       </div>
 
       {items.length === 0 ? (

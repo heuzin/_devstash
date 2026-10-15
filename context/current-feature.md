@@ -1,18 +1,29 @@
-# Current Feature
+# Current Feature: Collection Edit, Delete & Favorite
 
-<!-- Feature name and short description -->
+Add edit, delete, and favorite actions for collections, accessible from both the collection detail page and collection cards (on `/collections` and the dashboard).
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- `/collections/[id]` page header has Edit, Delete, and Favorite buttons/icons.
+- Edit opens a modal to update the collection's metadata (name, description).
+- Delete opens a confirmation dialog before deleting the collection.
+- Deleting a collection does NOT delete its items — items are only detached from that collection (their `ItemCollection` rows removed), the items themselves and their membership in other collections remain untouched.
+- Favorite on the detail page is just the icon/button for now — no toggle behavior wired up yet.
+- Collection cards (`CollectionsGrid`/collection card component, used on `/collections` and the dashboard) get a 3-dot icon that opens a dropdown with Edit, Delete, and Favorite.
+- Clicking anywhere else on the card still navigates to `/collections/[id]` (the 3-dot button and its dropdown must stop click propagation so they don't also trigger navigation).
+- Edit and Delete from the card dropdown reuse the same modal/confirmation flow as the detail page.
+- Favorite stays a non-functional placeholder everywhere in this feature (icon/button only, no server action, no state toggle) — matching how Favorite/Pin were initially left as placeholders in the Item Drawer feature.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Existing `Collection` model already has `isFavorite`, so the favorite icon's visual state (if any) can reflect current DB state, but no action should toggle it in this feature.
+- Follow established patterns: `createCollection`/`createCollectionSchema` (Server Action + Zod) for the edit path (likely a new `updateCollection`/`updateCollectionSchema`), and `deleteItem`'s `AlertDialog` pattern for the delete confirmation.
+- Deleting a collection should remove its `ItemCollection` join rows (cascade already exists via `onDelete: Cascade` on `ItemCollection.collection`), not the `Item` rows themselves — this is already how the schema is set up, just confirm the delete action only deletes the `Collection` row.
+- Scope does not include implementing favorite toggling, bulk actions, or collection reordering.
 
 ## History
 
