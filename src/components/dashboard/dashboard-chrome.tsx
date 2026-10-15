@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useCreateCollectionDialog } from "@/components/collections/create-collection-dialog-provider";
 import { useCreateItemDialog } from "@/components/items/create-item-dialog-provider";
+import { useCommandPalette } from "@/components/search/command-palette-provider";
 import { cn } from "@/lib/utils";
 
 interface DashboardChromeProps {
@@ -19,6 +20,7 @@ export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { open: openCreateItemDialog } = useCreateItemDialog();
   const { open: openCreateCollectionDialog } = useCreateCollectionDialog();
+  const { open: openCommandPalette } = useCommandPalette();
 
   function toggleSidebar() {
     if (window.matchMedia("(min-width: 768px)").matches) {
@@ -42,7 +44,12 @@ export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
         </div>
         <div className="relative mx-auto w-full max-w-md">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search items..." className="pl-9" />
+          <Input
+            placeholder="Search... ⌘K"
+            className="cursor-pointer pl-9"
+            readOnly
+            onClick={openCommandPalette}
+          />
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="outline" onClick={() => openCreateCollectionDialog()}>

@@ -418,3 +418,44 @@ export async function getItemTypesWithCounts(): Promise<ItemTypeSummary[]> {
     count: type._count.items,
   }));
 }
+
+export interface SearchItem {
+  id: string;
+  title: string;
+  contentPreview: string | null;
+  itemType: {
+    name: string;
+    icon: string;
+    color: string;
+  };
+}
+
+const CONTENT_PREVIEW_MAX_LENGTH = 140;
+
+export async function getSearchItems(): Promise<SearchItem[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  const items = await prisma.item.findMany({
+    where: { userId },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      content: true,
+      url: true,
+      itemType: { select: { name: true, icon: true, color: true } },
+    },
+  });
+
+  return items.map((item) => {
+    const preview = item.description ?? item.content ?? item.url ?? null;
+    return {
+      id: item.id,
+      title: item.title,
+      contentPreview: preview ? preview.slice(0, CONTENT_PREVIEW_MAX_LENGTH) : null,
+      itemType: item.itemType,
+    };
+  });
+}

@@ -4,18 +4,26 @@ import { VerifyEmailBanner } from "@/components/dashboard/verify-email-banner";
 import { CreateCollectionDialogProvider } from "@/components/collections/create-collection-dialog-provider";
 import { CreateItemDialogProvider } from "@/components/items/create-item-dialog-provider";
 import { ItemDrawerProvider } from "@/components/items/item-drawer-provider";
-import { getCollectionOptions, getSidebarCollections } from "@/lib/db/collections";
-import { getItemTypesWithCounts } from "@/lib/db/items";
+import { CommandPaletteProvider } from "@/components/search/command-palette-provider";
+import {
+  getCollectionOptions,
+  getSearchCollections,
+  getSidebarCollections,
+} from "@/lib/db/collections";
+import { getItemTypesWithCounts, getSearchItems } from "@/lib/db/items";
 import { getCurrentUser } from "@/lib/db/user";
 import { isEmailVerificationEnabled } from "@/lib/email-verification";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const [itemTypes, { favorites, recent }, user, collections] = await Promise.all([
-    getItemTypesWithCounts(),
-    getSidebarCollections(),
-    getCurrentUser(),
-    getCollectionOptions(),
-  ]);
+  const [itemTypes, { favorites, recent }, user, collections, searchItems, searchCollections] =
+    await Promise.all([
+      getItemTypesWithCounts(),
+      getSidebarCollections(),
+      getCurrentUser(),
+      getCollectionOptions(),
+      getSearchItems(),
+      getSearchCollections(),
+    ]);
 
   const sidebar = (
     <Sidebar
@@ -29,12 +37,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <CreateCollectionDialogProvider>
       <CreateItemDialogProvider itemTypes={itemTypes} collections={collections}>
-        <DashboardChrome sidebar={sidebar}>
-          <ItemDrawerProvider collections={collections}>
-            {isEmailVerificationEnabled() && user && !user.emailVerified && <VerifyEmailBanner />}
-            {children}
-          </ItemDrawerProvider>
-        </DashboardChrome>
+        <ItemDrawerProvider collections={collections}>
+          <CommandPaletteProvider items={searchItems} collections={searchCollections}>
+            <DashboardChrome sidebar={sidebar}>
+              {isEmailVerificationEnabled() && user && !user.emailVerified && (
+                <VerifyEmailBanner />
+              )}
+              {children}
+            </DashboardChrome>
+          </CommandPaletteProvider>
+        </ItemDrawerProvider>
       </CreateItemDialogProvider>
     </CreateCollectionDialogProvider>
   );

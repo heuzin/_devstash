@@ -221,3 +221,26 @@ export async function deleteCollection(userId: string, collectionId: string): Pr
 
   return true;
 }
+
+export interface SearchCollection {
+  id: string;
+  name: string;
+  itemCount: number;
+}
+
+export async function getSearchCollections(): Promise<SearchCollection[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  const collections = await prisma.collection.findMany({
+    where: { userId },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, _count: { select: { items: true } } },
+  });
+
+  return collections.map((collection) => ({
+    id: collection.id,
+    name: collection.name,
+    itemCount: collection._count.items,
+  }));
+}
