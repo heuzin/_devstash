@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/db/user";
 import type { Prisma } from "@/generated/prisma/client";
-import type { CreateCollectionInput } from "@/lib/validations/collections";
+import type { CreateCollectionInput, UpdateCollectionInput } from "@/lib/validations/collections";
 
 export interface CollectionTypeSummary {
   itemTypeId: string;
@@ -174,4 +174,50 @@ export async function createCollection(
     types: [],
     updatedAt: collection.updatedAt,
   };
+}
+
+const COLLECTION_SUMMARY_SELECT = {
+  id: true,
+  name: true,
+  description: true,
+  isFavorite: true,
+  updatedAt: true,
+  items: {
+    select: { item: { select: { itemType: { select: { id: true, icon: true, color: true } } } } },
+  },
+} satisfies Prisma.CollectionSelect;
+
+export async function updateCollection(
+  userId: string,
+  collectionId: string,
+  data: UpdateCollectionInput,
+): Promise<CollectionSummary | null> {
+  const existing = await prisma.collection.findFirst({
+    where: { id: collectionId, userId },
+    select: { id: true },
+  });
+  if (!existing) return null;
+
+  const collection = await prisma.collection.update({
+    where: { id: collectionId },
+    data: {
+      name: data.name,
+      description: data.description ?? null,
+    },
+    select: COLLECTION_SUMMARY_SELECT,
+  });
+
+  return toCollectionSummary(collection);
+}
+
+export async function deleteCollection(userId: string, collectionId: string): Promise<boolean> {
+  const existing = await prisma.collection.findFirst({
+    where: { id: collectionId, userId },
+    select: { id: true },
+  });
+  if (!existing) return false;
+
+  await prisma.collection.delete({ where: { id: collectionId } });
+
+  return true;
 }
