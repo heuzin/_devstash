@@ -1,18 +1,22 @@
-# Current Feature
-
-<!-- Feature name and short description -->
+# Current Feature: Settings Page
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Add a new `/settings` route, protected via `proxy.ts` (same pattern as `/profile`, `/items`, `/collections`)
+- Add a "Settings" link in the user icon dropdown (`UserMenu`) at the bottom of the sidebar, alongside the existing Profile/Sign out items
+- Move the Account actions off `/profile` and onto `/settings`:
+  - Change Password form (existing `ChangePasswordForm` component/`changePassword` action)
+  - Delete Account flow (existing `DeleteAccountDialog` component/`deleteAccount` action)
+- `/profile` keeps the account info (avatar/name/email/join date) and Usage stats cards; only the Account actions move
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- "Forgot password" in the original request was shorthand for the existing Change Password form, not the separate `/forgot-password` email-reset flow — confirmed with the user, no new forgot-password link is being added to Settings.
+- Reuse existing components as-is (`ChangePasswordForm`, `DeleteAccountDialog`) rather than rewriting them; this is a relocation, not a redesign.
 
 ## History
 

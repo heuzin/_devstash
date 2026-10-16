@@ -3,14 +3,11 @@ import { Folder, Package } from "lucide-react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { UserAvatar } from "@/components/user-avatar";
-import { ChangePasswordForm } from "@/components/profile/change-password-form";
-import { DeleteAccountDialog } from "@/components/profile/delete-account-dialog";
 import { getCurrentUser } from "@/lib/db/user";
 import { getItemStats, getItemTypesWithCounts } from "@/lib/db/items";
 import { getCollectionStats } from "@/lib/db/collections";
@@ -96,27 +93,6 @@ export default async function ProfilePage() {
               })}
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {user.hasPassword && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Change password</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChangePasswordForm />
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Danger zone</CardTitle>
-          <CardDescription>Permanently delete your account and all its data.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <DeleteAccountDialog />
         </CardContent>
       </Card>
     </div>
