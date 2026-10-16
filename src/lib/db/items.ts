@@ -4,6 +4,13 @@ import type { ContentType } from "@/generated/prisma/client";
 import type { CreateItemInput, UpdateItemInput } from "@/lib/validations/items";
 import { CREATABLE_ITEM_TYPE_NAMES, UPLOAD_TYPE_NAMES, URL_TYPE_NAMES } from "@/lib/item-types";
 import { R2_PUBLIC_URL, deleteFromR2, keyFromFileUrl } from "@/lib/r2";
+import {
+  DASHBOARD_RECENT_ITEMS_LIMIT,
+  ITEMS_PER_PAGE,
+  clampPage,
+  getTotalPages,
+  type PaginationMeta,
+} from "@/lib/pagination";
 
 export interface ItemSummary {
   id: string;
@@ -57,7 +64,7 @@ export interface DashboardItems {
 }
 
 export async function getDashboardItems(
-  recentLimit = 10,
+  recentLimit = DASHBOARD_RECENT_ITEMS_LIMIT,
   pinnedLimit = 20,
 ): Promise<DashboardItems> {
   const userId = await getCurrentUserId();
@@ -93,9 +100,10 @@ export interface ItemsByType {
     color: string;
   };
   items: ItemSummary[];
+  pagination: PaginationMeta;
 }
 
-export async function getItemsByTypeSlug(slug: string): Promise<ItemsByType | null> {
+export async function getItemsByTypeSlug(slug: string, page = 1): Promise<ItemsByType | null> {
   const userId = await getCurrentUserId();
   if (!userId) return null;
 
@@ -104,9 +112,16 @@ export async function getItemsByTypeSlug(slug: string): Promise<ItemsByType | nu
   });
   if (!itemType) return null;
 
+  const where = { userId, itemTypeId: itemType.id };
+  const totalCount = await prisma.item.count({ where });
+  const totalPages = getTotalPages(totalCount, ITEMS_PER_PAGE);
+  const currentPage = clampPage(page, totalPages);
+
   const items = await prisma.item.findMany({
-    where: { userId, itemTypeId: itemType.id },
+    where,
     orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
+    skip: (currentPage - 1) * ITEMS_PER_PAGE,
+    take: ITEMS_PER_PAGE,
     include: { itemType: true, tags: true },
   });
 
@@ -119,6 +134,7 @@ export async function getItemsByTypeSlug(slug: string): Promise<ItemsByType | nu
       color: itemType.color,
     },
     items: items.map(toItemSummary),
+    pagination: { page: currentPage, totalPages, totalCount },
   };
 }
 
@@ -130,9 +146,13 @@ export interface CollectionItems {
     isFavorite: boolean;
   };
   items: ItemSummary[];
+  pagination: PaginationMeta;
 }
 
-export async function getCollectionItems(collectionId: string): Promise<CollectionItems | null> {
+export async function getCollectionItems(
+  collectionId: string,
+  page = 1,
+): Promise<CollectionItems | null> {
   const userId = await getCurrentUserId();
   if (!userId) return null;
 
@@ -142,13 +162,24 @@ export async function getCollectionItems(collectionId: string): Promise<Collecti
   });
   if (!collection) return null;
 
+  const where = { userId, collections: { some: { collectionId } } };
+  const totalCount = await prisma.item.count({ where });
+  const totalPages = getTotalPages(totalCount, ITEMS_PER_PAGE);
+  const currentPage = clampPage(page, totalPages);
+
   const items = await prisma.item.findMany({
-    where: { userId, collections: { some: { collectionId } } },
+    where,
     orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
+    skip: (currentPage - 1) * ITEMS_PER_PAGE,
+    take: ITEMS_PER_PAGE,
     include: { itemType: true, tags: true },
   });
 
-  return { collection, items: items.map(toItemSummary) };
+  return {
+    collection,
+    items: items.map(toItemSummary),
+    pagination: { page: currentPage, totalPages, totalCount },
+  };
 }
 
 export interface ItemDetail {

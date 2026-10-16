@@ -4,11 +4,12 @@ import { ItemList } from "@/components/dashboard/item-list";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { getRecentCollections } from "@/lib/db/collections";
 import { getDashboardItems } from "@/lib/db/items";
+import { DASHBOARD_COLLECTIONS_LIMIT, DASHBOARD_RECENT_ITEMS_LIMIT } from "@/lib/pagination";
 
 export default async function DashboardPage() {
   const [collections, { pinned: pinnedItems, recent: recentItems }] = await Promise.all([
-    getRecentCollections(),
-    getDashboardItems(),
+    getRecentCollections(DASHBOARD_COLLECTIONS_LIMIT),
+    getDashboardItems(DASHBOARD_RECENT_ITEMS_LIMIT),
   ]);
 
   return (

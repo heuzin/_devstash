@@ -3,18 +3,25 @@ import { CollectionDetailActions } from "@/components/collections/collection-det
 import { FileList } from "@/components/items/file-list";
 import { ImageThumbnailCard } from "@/components/items/image-thumbnail-card";
 import { ItemGrid } from "@/components/items/item-grid";
+import { PaginationControls } from "@/components/shared/pagination-controls";
 import { getCollectionItems } from "@/lib/db/items";
 import { FILE_TYPE_NAME, IMAGE_TYPE_NAME } from "@/lib/item-types";
+import { parsePageParam } from "@/lib/pagination";
 
-export default async function CollectionDetailPage({ params }: PageProps<"/collections/[id]">) {
+export default async function CollectionDetailPage({
+  params,
+  searchParams,
+}: PageProps<"/collections/[id]">) {
   const { id } = await params;
+  const { page: pageParam } = await searchParams;
+  const page = parsePageParam(pageParam);
 
-  const result = await getCollectionItems(id);
+  const result = await getCollectionItems(id, page);
   if (!result) {
     notFound();
   }
 
-  const { collection, items } = result;
+  const { collection, items, pagination } = result;
   const imageItems = items.filter((item) => item.itemType.name === IMAGE_TYPE_NAME);
   const fileItems = items.filter((item) => item.itemType.name === FILE_TYPE_NAME);
   const otherItems = items.filter(
@@ -29,7 +36,7 @@ export default async function CollectionDetailPage({ params }: PageProps<"/colle
           {collection.description && (
             <p className="text-sm text-muted-foreground">{collection.description}</p>
           )}
-          <p className="text-sm text-muted-foreground">{items.length} items</p>
+          <p className="text-sm text-muted-foreground">{pagination.totalCount} items</p>
         </div>
         <CollectionDetailActions collection={collection} />
       </div>
@@ -64,6 +71,12 @@ export default async function CollectionDetailPage({ params }: PageProps<"/colle
           )}
         </div>
       )}
+
+      <PaginationControls
+        page={pagination.page}
+        totalPages={pagination.totalPages}
+        basePath={`/collections/${collection.id}`}
+      />
     </div>
   );
 }
