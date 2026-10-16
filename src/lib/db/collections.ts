@@ -2,6 +2,13 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/db/user";
 import type { Prisma } from "@/generated/prisma/client";
 import type { CreateCollectionInput, UpdateCollectionInput } from "@/lib/validations/collections";
+import {
+  COLLECTIONS_PER_PAGE,
+  DASHBOARD_COLLECTIONS_LIMIT,
+  clampPage,
+  getTotalPages,
+  type PaginationMeta,
+} from "@/lib/pagination";
 
 export interface CollectionTypeSummary {
   itemTypeId: string;
@@ -65,11 +72,13 @@ function toCollectionSummary(collection: CollectionWithItemTypes): CollectionSum
 async function queryCollectionSummaries(
   where: Prisma.CollectionWhereInput,
   take?: number,
+  skip?: number,
 ): Promise<CollectionSummary[]> {
   const collections = await prisma.collection.findMany({
     where,
     orderBy: { updatedAt: "desc" },
     take,
+    skip,
     select: {
       id: true,
       name: true,
@@ -85,18 +94,40 @@ async function queryCollectionSummaries(
   return collections.map(toCollectionSummary);
 }
 
-export async function getRecentCollections(limit = 6): Promise<CollectionSummary[]> {
+export async function getRecentCollections(
+  limit = DASHBOARD_COLLECTIONS_LIMIT,
+): Promise<CollectionSummary[]> {
   const userId = await getCurrentUserId();
   if (!userId) return [];
 
   return queryCollectionSummaries({ userId }, limit);
 }
 
-export async function getAllCollections(): Promise<CollectionSummary[]> {
-  const userId = await getCurrentUserId();
-  if (!userId) return [];
+export interface PaginatedCollections {
+  collections: CollectionSummary[];
+  pagination: PaginationMeta;
+}
 
-  return queryCollectionSummaries({ userId });
+export async function getAllCollections(page = 1): Promise<PaginatedCollections> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return { collections: [], pagination: { page: 1, totalPages: 1, totalCount: 0 } };
+  }
+
+  const totalCount = await prisma.collection.count({ where: { userId } });
+  const totalPages = getTotalPages(totalCount, COLLECTIONS_PER_PAGE);
+  const currentPage = clampPage(page, totalPages);
+
+  const collections = await queryCollectionSummaries(
+    { userId },
+    COLLECTIONS_PER_PAGE,
+    (currentPage - 1) * COLLECTIONS_PER_PAGE,
+  );
+
+  return {
+    collections,
+    pagination: { page: currentPage, totalPages, totalCount },
+  };
 }
 
 export interface SidebarCollections {
