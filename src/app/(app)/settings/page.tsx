@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { DeleteAccountDialog } from "@/components/profile/delete-account-dialog";
+import { EditorPreferencesForm } from "@/components/settings/editor-preferences-form";
 import { getCurrentUser } from "@/lib/db/user";
 
 export default async function SettingsPage() {
@@ -22,6 +23,16 @@ export default async function SettingsPage() {
         <h1 className="text-2xl font-semibold">Settings</h1>
         <p className="text-sm text-muted-foreground">Manage your account settings.</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Editor preferences</CardTitle>
+          <CardDescription>Changes save automatically.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EditorPreferencesForm />
+        </CardContent>
+      </Card>
 
       {user.hasPassword && (
         <Card>

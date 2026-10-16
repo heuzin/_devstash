@@ -1,5 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_EDITOR_PREFERENCES, type EditorPreferences } from "@/lib/editor-preferences";
+import { editorPreferencesSchema } from "@/lib/validations/editor-preferences";
 
 export interface CurrentUser {
   id: string;
@@ -35,4 +37,17 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 export async function getCurrentUserId(): Promise<string | null> {
   const session = await auth();
   return session?.user?.id ?? null;
+}
+
+export async function getEditorPreferences(): Promise<EditorPreferences> {
+  const session = await auth();
+  if (!session?.user?.id) return DEFAULT_EDITOR_PREFERENCES;
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { editorPreferences: true },
+  });
+
+  const parsed = editorPreferencesSchema.safeParse(dbUser?.editorPreferences);
+  return parsed.success ? parsed.data : DEFAULT_EDITOR_PREFERENCES;
 }
