@@ -1,7 +1,5 @@
 import { Star } from "lucide-react";
-import { FavoriteCollectionRow } from "@/components/favorites/favorite-collection-row";
-import { FavoriteItemRow } from "@/components/favorites/favorite-item-row";
-import { FavoritesSection } from "@/components/favorites/favorites-section";
+import { FavoritesList } from "@/components/favorites/favorites-list";
 import { getFavoriteCollections } from "@/lib/db/collections";
 import { getFavoriteItems } from "@/lib/db/items";
 
@@ -17,18 +15,7 @@ export default async function FavoritesPage() {
       </div>
 
       {hasFavorites ? (
-        <div className="space-y-6 font-mono text-sm">
-          <FavoritesSection title="Items" count={items.length}>
-            {items.map((item) => (
-              <FavoriteItemRow key={item.id} item={item} />
-            ))}
-          </FavoritesSection>
-          <FavoritesSection title="Collections" count={collections.length}>
-            {collections.map((collection) => (
-              <FavoriteCollectionRow key={collection.id} collection={collection} />
-            ))}
-          </FavoritesSection>
-        </div>
+        <FavoritesList items={items} collections={collections} />
       ) : (
         <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
           <Star className="size-8" />

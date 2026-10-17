@@ -1,18 +1,30 @@
-# Current Feature
+# Current Feature: Favorites Sorting
 
-<!-- Feature name and short description -->
+Add client-side sorting to the `/favorites` page — sort by name, date, or item type.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- A sort control on `/favorites` with three options: **Name** (A–Z), **Date** (newest first), and **Type**
+- Sorting happens entirely client-side on the already-fetched favorites — no refetch, no URL/server round-trip
+- Default sort is Date (newest first), matching the page's current `updatedAt desc` ordering, so nothing changes until the user picks another option
+- Items sort by `title` / `updatedAt` / `itemType.name`; collections sort by `name` / `updatedAt`
+- Type sort groups items by item type name (alphabetical), with a secondary sort by name within each type
+- A pure, unit-tested sorting utility in `src/lib/` (e.g. `sortFavorites`) holding the comparison logic, kept separate from the UI
+- Existing row behavior (item click opens drawer, collection click navigates) and the empty states keep working
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Current page (`src/app/(app)/favorites/page.tsx`) is a server component that fetches both lists via `getFavoriteItems()`/`getFavoriteCollections()` and renders them in two `FavoritesSection`s. Keep the fetching server-side; move the sortable list rendering into a new client component that receives the arrays as props and holds the sort state.
+- `FavoriteItem` already carries `title`, `updatedAt`, and `itemType.name`; collections use `CollectionSummary` (`name`, `updatedAt`) — no data/query changes needed.
+- Collections have no single item type, so "Type" sort doesn't apply to them. Default plan: under Type sort, collections fall back to Name order. Confirm with the user if a different behavior is wanted.
+- One sort control applies to both sections (rather than separate controls per section) to keep the compact VS Code-style layout uncluttered.
+- Use a shadcn `Select` (already installed) or a small segmented control; match the existing monospace, compact styling.
+- Name sort should be case-insensitive (`localeCompare` with `sensitivity: "base"`).
+- No ascending/descending toggle unless requested — each option has one sensible direction.
 
 ## History
 
