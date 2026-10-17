@@ -19,7 +19,7 @@ vi.mock("@/lib/r2", () => ({
 import { auth } from "@/auth";
 import { prismaMock } from "@/lib/prisma-mock";
 import { R2_PUBLIC_URL, deleteFromR2 } from "@/lib/r2";
-import { createItem, deleteItem, toggleItemFavorite, updateItem } from "./items";
+import { createItem, deleteItem, toggleItemFavorite, toggleItemPin, updateItem } from "./items";
 
 const authMock = vi.mocked(auth);
 const deleteFromR2Mock = vi.mocked(deleteFromR2);
@@ -486,6 +486,53 @@ describe("toggleItemFavorite", () => {
     expect(prismaMock.item.update).toHaveBeenCalledWith({
       where: { id: ITEM_ID },
       data: { isFavorite: next },
+      include: expect.any(Object),
+    });
+  });
+});
+
+describe("toggleItemPin", () => {
+  it("rejects when there is no signed-in user", async () => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue(null);
+
+    const result = await toggleItemPin(ITEM_ID);
+
+    expect(result).toEqual({ success: false, error: "You must be signed in to do this" });
+    expect(prismaMock.item.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when the item doesn't exist or isn't owned by the user", async () => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue({ user: { id: USER_ID } });
+    prismaMock.item.findFirst.mockResolvedValue(null);
+
+    const result = await toggleItemPin(ITEM_ID);
+
+    expect(result).toEqual({ success: false, error: "Item not found" });
+    expect(prismaMock.item.update).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [false, true],
+    [true, false],
+  ])("flips isPinned from %s to %s for an owned item", async (current, next) => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue({ user: { id: USER_ID } });
+    prismaMock.item.findFirst.mockResolvedValue({ isPinned: current } as never);
+    prismaMock.item.update.mockResolvedValue({ ...DB_ITEM, isPinned: next } as never);
+
+    const result = await toggleItemPin(ITEM_ID);
+
+    expect(result.success).toBe(true);
+    expect(result.data?.isPinned).toBe(next);
+    expect(prismaMock.item.findFirst).toHaveBeenCalledWith({
+      where: { id: ITEM_ID, userId: USER_ID },
+      select: { isPinned: true },
+    });
+    expect(prismaMock.item.update).toHaveBeenCalledWith({
+      where: { id: ITEM_ID },
+      data: { isPinned: next },
       include: expect.any(Object),
     });
   });

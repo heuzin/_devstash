@@ -421,6 +421,22 @@ export async function toggleItemFavorite(
   return toItemDetail(item);
 }
 
+export async function toggleItemPin(userId: string, itemId: string): Promise<ItemDetail | null> {
+  const existing = await prisma.item.findFirst({
+    where: { id: itemId, userId },
+    select: { isPinned: true },
+  });
+  if (!existing) return null;
+
+  const item = await prisma.item.update({
+    where: { id: itemId },
+    data: { isPinned: !existing.isPinned },
+    include: itemDetailInclude,
+  });
+
+  return toItemDetail(item);
+}
+
 export async function deleteItem(userId: string, itemId: string): Promise<boolean> {
   const existing = await prisma.item.findFirst({
     where: { id: itemId, userId },

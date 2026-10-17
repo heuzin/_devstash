@@ -1,18 +1,25 @@
-# Current Feature
+# Current Feature: Pinned Items
 
-<!-- Feature name and short description -->
+Make the existing Pin button in the ItemDrawer functional, with pinned items appearing at the top of listings and in the dashboard's pinned items section.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Create a `toggleItemPin` Server Action
+- Make the Pin button in the ItemDrawer clickable (it exists but has no `onClick`)
+- Optimistic UI updates for instant feedback
+- Toast notification on success/error
+- Pinned items sort to the top of listings
+- Pinned items appear in the dashboard's pinned items section
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Follow the existing Favorite Toggle pattern (`toggleItemFavorite` action + `src/lib/db` function with `findFirst`-scoped ownership check, flipping the stored value server-side; drawer updates in place via the `onUpdated` prop threaded `ItemDrawerBody` → `ItemViewBody` → `ItemActionBar`; `router.refresh()` after toggle)
+- Items only — not collections
+- The Pin icon on `ItemCard` remains a static indicator (not clickable)
 
 ## History
 
