@@ -1,18 +1,28 @@
-# Current Feature
+# Current Feature: Favorite Toggle
 
-<!-- Feature name and short description -->
+Make the existing Favorite buttons actually toggle `isFavorite` for items (drawer) and collections (detail page + cards).
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Item drawer's Favorite button (`src/components/items/drawer/item-action-bar.tsx`) toggles the item's `isFavorite` and updates the drawer immediately (filled yellow star when favorited)
+- Collection detail page's Favorite icon button (`src/components/collections/collection-detail-actions.tsx`) toggles the collection's `isFavorite`
+- Collection card dropdown's "Favorite" menu item (`src/components/collections/collection-card.tsx`) toggles the collection's `isFavorite`, with the label reflecting current state (Favorite / Unfavorite) and without navigating away
+- New `toggleItemFavorite(itemId)` and `toggleCollectionFavorite(collectionId)` Server Actions (auth + ownership checked server-side, `{ success, data, error }` pattern)
+- Success/error feedback via Sonner toast; `router.refresh()` so cards, sidebar favorites, stats, and `/favorites` reflect the change
+- Unit tests for both new actions (no session, not found/not owned, success)
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- All three Favorite controls already exist as visual-only placeholders from earlier features (Item Drawer, Collection Edit/Delete/Favorite) — this wires them up; no new buttons are needed.
+- No migration: `Item.isFavorite` and `Collection.isFavorite` already exist.
+- Follow the existing ownership-check pattern (`findFirst` scoped to `userId`, then `update`) from `updateItem`/`updateCollection` in `src/lib/db/`.
+- Drawer should update in place by handing the returned `ItemDetail` back to `ItemDrawerProvider` (same as edit save), avoiding a refetch.
+- Prisma's `@updatedAt` will bump `updatedAt` on toggle; `/favorites` uses `updatedAt` as its "date added", so favoriting moves an entry to the top there — acceptable, but it also reorders recent lists. Consider whether to preserve `updatedAt` during implementation.
+- "Cards" is interpreted as collection cards (where the dropdown Favorite placeholder lives); item cards only display the favorite state and are out of scope unless requested. Pin stays a placeholder.
 
 ## History
 

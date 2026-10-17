@@ -8,7 +8,12 @@ vi.mock("@/lib/prisma"); // picks up src/lib/__mocks__/prisma.ts
 
 import { auth } from "@/auth";
 import { prismaMock } from "@/lib/prisma-mock";
-import { createCollection, deleteCollection, updateCollection } from "./collections";
+import {
+  createCollection,
+  deleteCollection,
+  toggleCollectionFavorite,
+  updateCollection,
+} from "./collections";
 
 const authMock = vi.mocked(auth);
 
@@ -200,5 +205,56 @@ describe("deleteCollection", () => {
     expect(prismaMock.collection.delete).toHaveBeenCalledWith({ where: { id: COLLECTION_ID } });
     expect(prismaMock.item.delete).not.toHaveBeenCalled();
     expect(prismaMock.item.deleteMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("toggleCollectionFavorite", () => {
+  it("rejects when there is no signed-in user", async () => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue(null);
+
+    const result = await toggleCollectionFavorite(COLLECTION_ID);
+
+    expect(result).toEqual({ success: false, error: "You must be signed in to do this" });
+    expect(prismaMock.collection.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when the collection doesn't exist or isn't owned by the user", async () => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue({ user: { id: USER_ID } });
+    prismaMock.collection.findFirst.mockResolvedValue(null);
+
+    const result = await toggleCollectionFavorite(COLLECTION_ID);
+
+    expect(result).toEqual({ success: false, error: "Collection not found" });
+    expect(prismaMock.collection.update).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [false, true],
+    [true, false],
+  ])("flips isFavorite from %s to %s for an owned collection", async (current, next) => {
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    authMock.mockResolvedValue({ user: { id: USER_ID } });
+    prismaMock.collection.findFirst.mockResolvedValue({ isFavorite: current } as never);
+    prismaMock.collection.update.mockResolvedValue({
+      ...DB_COLLECTION,
+      isFavorite: next,
+      items: [],
+    } as never);
+
+    const result = await toggleCollectionFavorite(COLLECTION_ID);
+
+    expect(result.success).toBe(true);
+    expect(result.data?.isFavorite).toBe(next);
+    expect(prismaMock.collection.findFirst).toHaveBeenCalledWith({
+      where: { id: COLLECTION_ID, userId: USER_ID },
+      select: { isFavorite: true },
+    });
+    expect(prismaMock.collection.update).toHaveBeenCalledWith({
+      where: { id: COLLECTION_ID },
+      data: { isFavorite: next },
+      select: expect.any(Object),
+    });
   });
 });

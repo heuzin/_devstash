@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import {
   createItem as createItemQuery,
   deleteItem as deleteItemQuery,
+  toggleItemFavorite as toggleItemFavoriteQuery,
   updateItem as updateItemQuery,
   type ItemDetail,
 } from "@/lib/db/items";
@@ -54,6 +55,20 @@ export async function updateItem(itemId: string, data: unknown): Promise<ActionR
   }
 
   const updated = await updateItemQuery(session.user.id, itemId, parsed.data);
+  if (!updated) {
+    return { success: false, error: "Item not found" };
+  }
+
+  return { success: true, data: updated };
+}
+
+export async function toggleItemFavorite(itemId: string): Promise<ActionResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You must be signed in to do this" };
+  }
+
+  const updated = await toggleItemFavoriteQuery(session.user.id, itemId);
   if (!updated) {
     return { success: false, error: "Item not found" };
   }

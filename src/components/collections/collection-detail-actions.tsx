@@ -6,6 +6,7 @@ import { Pencil, Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DeleteCollectionDialog } from "@/components/collections/delete-collection-dialog";
 import { EditCollectionDialog } from "@/components/collections/edit-collection-dialog";
+import { useToggleCollectionFavorite } from "@/lib/hooks/use-toggle-collection-favorite";
 
 interface CollectionDetailActionsProps {
   collection: {
@@ -20,6 +21,7 @@ export function CollectionDetailActions({ collection }: CollectionDetailActionsP
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const favorite = useToggleCollectionFavorite(collection.id);
 
   return (
     <>
@@ -28,7 +30,10 @@ export function CollectionDetailActions({ collection }: CollectionDetailActionsP
           variant="ghost"
           size="icon-sm"
           className={collection.isFavorite ? "text-yellow-400" : "text-muted-foreground"}
-          aria-label="Favorite"
+          aria-label={collection.isFavorite ? "Remove from favorites" : "Add to favorites"}
+          aria-pressed={collection.isFavorite}
+          disabled={favorite.isToggling}
+          onClick={favorite.toggle}
         >
           <Star className={collection.isFavorite ? "size-4 fill-yellow-400" : "size-4"} />
         </Button>

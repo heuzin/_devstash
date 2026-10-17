@@ -90,5 +90,12 @@ function ItemDrawerBody({
     );
   }
 
-  return <ItemViewBody item={item} onEdit={() => setMode("edit")} onDeleted={onItemDeleted} />;
+  return (
+    <ItemViewBody
+      item={item}
+      onEdit={() => setMode("edit")}
+      onUpdated={onItemUpdated}
+      onDeleted={onItemDeleted}
+    />
+  );
 }

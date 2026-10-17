@@ -12,10 +12,11 @@ import { capitalize } from "@/lib/utils";
 interface ItemViewBodyProps {
   item: ItemDetail;
   onEdit: () => void;
+  onUpdated: (item: ItemDetail) => void;
   onDeleted: () => void;
 }
 
-export function ItemViewBody({ item, onEdit, onDeleted }: ItemViewBodyProps) {
+export function ItemViewBody({ item, onEdit, onUpdated, onDeleted }: ItemViewBodyProps) {
   const Icon = ITEM_TYPE_ICONS[item.itemType.icon];
 
   return (
@@ -36,7 +37,7 @@ export function ItemViewBody({ item, onEdit, onDeleted }: ItemViewBodyProps) {
           {item.language && <Badge variant="secondary">{item.language}</Badge>}
         </div>
 
-        <ItemActionBar item={item} onEdit={onEdit} onDeleted={onDeleted} />
+        <ItemActionBar item={item} onEdit={onEdit} onUpdated={onUpdated} onDeleted={onDeleted} />
       </div>
 
       <div className="space-y-6 p-4">

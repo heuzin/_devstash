@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DeleteCollectionDialog } from "@/components/collections/delete-collection-dialog";
 import { EditCollectionDialog } from "@/components/collections/edit-collection-dialog";
+import { useToggleCollectionFavorite } from "@/lib/hooks/use-toggle-collection-favorite";
 import type { CollectionSummary } from "@/lib/db/collections";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
 
@@ -24,6 +25,7 @@ export function CollectionCard({ collection }: CollectionCardProps) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const favorite = useToggleCollectionFavorite(collection.id);
 
   function navigate() {
     router.push(`/collections/${collection.id}`);
@@ -73,7 +75,9 @@ export function CollectionCard({ collection }: CollectionCardProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
                   <DropdownMenuItem onClick={() => setEditOpen(true)}>Edit</DropdownMenuItem>
-                  <DropdownMenuItem>Favorite</DropdownMenuItem>
+                  <DropdownMenuItem disabled={favorite.isToggling} onClick={favorite.toggle}>
+                    {collection.isFavorite ? "Unfavorite" : "Favorite"}
+                  </DropdownMenuItem>
                   <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
                     Delete
                   </DropdownMenuItem>

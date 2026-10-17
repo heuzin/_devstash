@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import {
   createCollection as createCollectionQuery,
   deleteCollection as deleteCollectionQuery,
+  toggleCollectionFavorite as toggleCollectionFavoriteQuery,
   updateCollection as updateCollectionQuery,
   type CollectionSummary,
 } from "@/lib/db/collections";
@@ -54,6 +55,20 @@ export async function updateCollection(collectionId: string, data: unknown): Pro
   }
 
   const updated = await updateCollectionQuery(session.user.id, collectionId, parsed.data);
+  if (!updated) {
+    return { success: false, error: "Collection not found" };
+  }
+
+  return { success: true, data: updated };
+}
+
+export async function toggleCollectionFavorite(collectionId: string): Promise<ActionResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You must be signed in to do this" };
+  }
+
+  const updated = await toggleCollectionFavoriteQuery(session.user.id, collectionId);
   if (!updated) {
     return { success: false, error: "Collection not found" };
   }
