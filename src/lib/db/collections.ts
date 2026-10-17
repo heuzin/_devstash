@@ -150,6 +150,13 @@ export async function getSidebarCollections(
   return { favorites, recent };
 }
 
+export async function getFavoriteCollections(): Promise<CollectionSummary[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  return queryCollectionSummaries({ userId, isFavorite: true });
+}
+
 export interface CollectionOption {
   id: string;
   name: string;

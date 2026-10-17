@@ -91,6 +91,33 @@ export async function getDashboardItems(
   };
 }
 
+export interface FavoriteItem {
+  id: string;
+  title: string;
+  updatedAt: Date;
+  itemType: {
+    name: string;
+    icon: string;
+    color: string;
+  };
+}
+
+export async function getFavoriteItems(): Promise<FavoriteItem[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  return prisma.item.findMany({
+    where: { userId, isFavorite: true },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      updatedAt: true,
+      itemType: { select: { name: true, icon: true, color: true } },
+    },
+  });
+}
+
 export interface ItemsByType {
   itemType: {
     id: string;

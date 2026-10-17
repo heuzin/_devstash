@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { FolderPlus, Layers, PanelLeft, Plus, Search } from "lucide-react";
+import Link from "next/link";
+import { FolderPlus, Layers, PanelLeft, Plus, Search, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -52,6 +53,15 @@ export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
           />
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            nativeButton={false}
+            render={<Link href="/favorites" />}
+            aria-label="Favorites"
+          >
+            <Star className="size-4" />
+          </Button>
           <Button variant="outline" onClick={() => openCreateCollectionDialog()}>
             <FolderPlus className="size-4" />
             New Collection
