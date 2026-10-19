@@ -1,18 +1,34 @@
-# Current Feature
+# Current Feature: Homepage
 
-<!-- Feature name and short description -->
+Replace the placeholder `src/app/page.tsx` with the real marketing homepage, ported from the static prototype in `prototypes/homepage/` using Tailwind/shadcn and React components.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- `/` renders the public homepage (not in `proxy.ts`'s matcher) with page `metadata` from the prototype's `<head>`
+- Sections in order: Navbar, Hero (text + chaos → arrow → dashboard visual), Features, AI, Pricing, CTA, Footer — copy/content straight from `prototypes/homepage/index.html`
+- Server components by default in `src/components/homepage/`: `HeroSection`, `DashboardPreview`, `FeaturesSection` (maps a `FEATURES` array to 6 `FeatureCard`s), `AiSection`, `PricingSection`, `CtaSection`, `Footer` (server-rendered year)
+- Client components only where needed: `HomeNavbar` (opaque on scroll), `ChaosBox` (port the RAF drift/bounce/rotate/pulse/cursor-repel logic with refs, paused off-screen via `IntersectionObserver`, cleaned up on unmount), `PricingCards` (shadcn `Switch` toggling Pro $8/month ↔ $72/year), `Reveal` + `AiTags` sharing a `useInView` hook in `src/lib/hooks/`
+- All animations respect `prefers-reduced-motion`
+- Links: logo → `/`; Features/Pricing → `#features`/`#pricing`; Sign In → `/sign-in`; all Get Started / Get Started Free / Upgrade to Pro → `/register`; See Features → `#features`
+- Navbar always shows Sign In (→ `/sign-in`) to the left of Get Started (→ `/register`), regardless of auth state
+- Footer links without a destination (Changelog, Docs, Blog, Support, About, Privacy, Terms) are dropped, no `href="#"`
+- Extract the duplicated logo markup (`dashboard-chrome.tsx`, `(auth)/layout.tsx`) into a shared `Logo` component, reused in the navbar and footer
+- Responsive: hero visual stacks with the arrow rotated 90° on mobile, grids collapse to one column, no horizontal overflow at 390px
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Tailwind v4 utilities only — don't port `styles.css`, no inline `style` props; use shadcn `Button` (`nativeButton={false}` when rendered as a `Link`), `Badge`, `Card`, `Switch`
+- Reuse the app's theme tokens and Geist fonts instead of the prototype's Inter/JetBrains Mono and custom variables
+- Type accent colors defined once (e.g. `HOMEPAGE_TYPE_COLORS`) using the app's real system type colors (snippet `#3b82f6`, prompt `#8b5cf6`, command `#f97316`, note `#fde047`, file `#6b7280`, image `#ec4899`, link `#10b981`), not the prototype's palette
+- Lucide icons for features/checklist/arrow; Notion/Slack/VS Code marks in `ChaosBox` stay inline SVGs, GitHub reuses `src/components/icons/github-icon.tsx`
+- "Upgrade to Pro" goes to `/register` since Stripe billing isn't built yet
+- Leave `prototypes/homepage/` untouched
+- No unit tests needed (UI-only); verify via Playwright at 1440px and 390px — animations, pricing toggle, every link destination, navbar Sign In → `/sign-in` and Get Started → `/register`, no console errors or overflow
+- Spec: `context/features/homepage-spec.md`
 
 ## History
 

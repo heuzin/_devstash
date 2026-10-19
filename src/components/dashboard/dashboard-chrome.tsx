@@ -2,7 +2,8 @@
 
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { FolderPlus, Layers, PanelLeft, Plus, Search, Star } from "lucide-react";
+import { FolderPlus, PanelLeft, Plus, Search, Star } from "lucide-react";
+import { Logo } from "@/components/shared/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -38,16 +39,7 @@ export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
           <Button variant="ghost" size="icon" onClick={toggleSidebar} aria-label="Toggle sidebar">
             <PanelLeft className="size-4" />
           </Button>
-          <Link
-            href="/dashboard"
-            aria-label="DevStash dashboard"
-            className="flex items-center gap-2 rounded-md transition-opacity outline-none hover:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            <div className="flex size-7 items-center justify-center rounded-lg bg-linear-to-br from-indigo-500 to-purple-600 text-white">
-              <Layers className="size-4" />
-            </div>
-            <span className="font-semibold">DevStash</span>
-          </Link>
+          <Logo href="/dashboard" aria-label="DevStash dashboard" />
         </div>
         <div className="relative mx-auto w-full max-w-md">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
