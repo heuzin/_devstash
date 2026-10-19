@@ -1,34 +1,18 @@
-# Current Feature: Homepage Mockup
+# Current Feature
 
-Static marketing homepage prototype for DevStash (HTML/CSS/JS, not part of the Next.js app).
+<!-- Feature name and short description -->
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Output lives in `prototypes/homepage/` as `index.html`, `styles.css`, `script.js`
-- Fixed top nav (logo, Features/Pricing links, Sign In/Get Started) that becomes more opaque on scroll
-- Hero text: "Stop Losing Your Developer Knowledge" gradient headline, subheadline about scattered knowledge, CTA buttons
-- Hero visual, "chaos to order":
-  - Left: "Your knowledge today..." box with 8 floating icons (Notion, GitHub, Slack, VS Code, browser tabs, terminal, text file, bookmark) that drift, bounce off walls, subtly rotate/scale-pulse, and repel from the mouse cursor (requestAnimationFrame)
-  - Center: CSS-pulsing transform arrow
-  - Right: "...with DevStash" simplified dashboard mockup (sidebar nav + grid of item cards with type-colored top borders)
-- Features: 6 cards (Code Snippets, AI Prompts, Instant Search, Commands, Files & Docs, Collections), each using its item type accent color
-- AI section: left column with "Pro Feature" badge and AI capabilities checklist; right column with a code editor mockup showing "AI Generated Tags"
-- Pricing: Free ($0, 50 items, 3 collections) vs Pro ($8/mo, unlimited, AI features), Pro highlighted with "Most Popular" badge, monthly/yearly toggle ($72/yr)
-- CTA: "Ready to Organize Your Knowledge?" with button
-- Footer: logo, link columns, copyright with current year
-- Scroll-triggered fade-in animations
-- Responsive: on mobile, chaos/arrow/dashboard stack vertically, arrow rotates 90° to point down, grids go single column
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- Spec: `context/features/homepage-mockup-spec.md`
-- Dark theme. Spec's accent palette: Snippet `#3b82f6`, Prompt `#f59e0b`, Command `#06b6d4`, Note `#22c55e`, File `#64748b`, Image `#ec4899`, URL `#6366f1` — this differs from the app's seeded type colors (Prompt `#8b5cf6`, Command `#f97316`, Note `#fde047`, File `#6b7280`, Link `#10b981`); confirm which to use before starting
-- Standalone prototype — no Next.js, Tailwind, or shadcn; plain HTML/CSS/JS, so the project's Tailwind/no-inline-style rules don't strictly apply
-- Brand logos (Notion, GitHub, Slack, VS Code) will need inline SVGs since lucide-react dropped brand icons
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -81,3 +65,4 @@ In Progress
 - Favorites Sorting: added a "Sort by" control (shadcn `Select`, Date/Name/Type) to `/favorites`, sorting client-side on the already-fetched lists with no refetch or URL round-trip. `src/app/(app)/favorites/page.tsx` still fetches both lists server-side but now hands them to a new `FavoritesList` client component (`src/components/favorites/favorites-list.tsx`) that holds the sort state and renders the existing `FavoritesSection`/`FavoriteItemRow`/`FavoriteCollectionRow` components; one control drives both sections. Comparison logic lives in a new pure `src/lib/favorites-sort.ts` (`FAVORITES_SORT_OPTIONS`, `DEFAULT_FAVORITES_SORT`, `sortFavoriteItems`, `sortFavoriteCollections`, generic over minimal structural types and non-mutating): Date is newest-first `updatedAt` and the default (matching the page's previous order), Name is case-insensitive `localeCompare` (`sensitivity: "base"`), and Type groups items by `itemType.name` then title — collections have no single type, so Type falls back to name order for them. No ascending/descending toggle. Verified `npm run lint`, `npm run build`, and `npm run test` (161/161, 8 new tests in `src/lib/favorites-sort.test.ts` covering all three orderings, case-insensitivity, the type→name tiebreak, non-mutation, empty input, and the collection type-fallback) all pass, and via Playwright against the dev DB: Date/Name/Type each produced the expected orderings for the demo user's 7 favorite items and 3 favorite collections, clicking an item row still opened the drawer under a non-default sort, no console errors.
 - Pinned Items: wired up the item drawer's previously display-only Pin button (`src/components/items/drawer/item-action-bar.tsx`) to toggle `isPinned`, following the Favorite Toggle pattern — a new `toggleItemPin` Server Action (`src/actions/items.ts`) backed by a matching `toggleItemPin` query in `src/lib/db/items.ts` (ownership-checked `findFirst` scoped to `userId`, then flips the stored value server-side and returns the updated `ItemDetail`). Unlike the favorite toggle, the pin toggle is optimistic per spec: it immediately passes a flipped copy of the item up via the existing `onUpdated` prop, then replaces it with the server's returned `ItemDetail` on success or reverts to the previous item on failure; the button disables while in flight (preventing double-toggle races), exposes `aria-pressed`, shows a filled icon and "Pinned" label when pinned, and fires a Sonner toast ("Item pinned"/"Item unpinned"/error) followed by `router.refresh()`. No listing or dashboard changes were needed — `getItemsByTypeSlug`/`getCollectionItems` already sort `isPinned` desc first and `getDashboardItems` already feeds the dashboard's Pinned section. Items only (not collections); `ItemCard`'s pin icon stays a static indicator. Like favorites, toggling bumps `updatedAt`. Verified `npm run lint`, `npm run build`, and `npm run test` (165/165, 4 new tests covering `toggleItemPin`'s no-session, not-found/not-owned, and both-direction toggle branches) all pass, and via Playwright against the dev DB: pinning "Clean Install npm Dependencies" on `/items/commands` showed the toast, flipped the button to "Pinned", and moved the card to the top of the grid; it then appeared in the dashboard's Pinned section, and unpinning from there removed the section, restoring the original pin state; no console errors. The optimistic-revert-on-failure path wasn't exercised in the browser.
 - Logo Links to Dashboard: wrapped the DevStash logo icon and wordmark in `DashboardChrome`'s top bar (`src/components/dashboard/dashboard-chrome.tsx`) in a single `next/link` `Link` to `/dashboard`, with `aria-label="DevStash dashboard"`, a subtle `hover:opacity-80` transition, and a `focus-visible:ring-3 focus-visible:ring-ring/50` focus ring matching the shadcn `Button` focus style; the adjacent sidebar toggle `Button` stays outside the link. The `(auth)` layout's logo was left unlinked, since its signed-out users would just be bounced back to `/sign-in`. Verified `npm run lint` and `npm run build` pass (no tests needed — UI-only), and via Playwright against the dev server: clicking the logo on `/favorites` navigated to `/dashboard`, the link is keyboard-focusable, and the sidebar toggle still collapses/expands the sidebar independently.
+- Homepage Mockup: added a standalone static marketing homepage prototype in `prototypes/homepage/` (`index.html`, `styles.css`, `script.js` — plain HTML/CSS/JS, not wired into the Next.js app), built from `context/features/homepage-mockup-spec.md`. Includes a fixed nav that turns more opaque on scroll, a gradient "Stop Losing Your Developer Knowledge" hero, and a "chaos to order" visual: a box of 8 icons (simplified inline-SVG Notion/GitHub/Slack/VS Code marks plus browser tabs, terminal, text file, bookmark) animated via `requestAnimationFrame` to drift, bounce off walls, rotate, scale-pulse, and repel from the cursor (paused via `IntersectionObserver` when off-screen), a CSS-pulsing arrow, and a simplified dashboard mockup with type-colored card top borders. Also a 6-card Features grid, an AI section (Pro badge, checklist, editor mockup with staggered "AI Generated Tags"), Free/Pro pricing with a monthly/yearly toggle ($8/mo ↔ $72/yr), a CTA, a footer with the current year, scroll-triggered fade-ins, and `prefers-reduced-motion` support. Uses the spec's accent palette (Prompt amber, Command cyan, Note green, URL indigo) rather than the app's seeded type colors, defined as CSS variables in `styles.css` so they're easy to swap. Verified via Playwright at 1440px and 390px: icons animate, the pricing toggle swaps prices, no console errors or horizontal overflow, and on mobile the hero stacks vertically with the arrow rotated to point down; `npm run lint` passes.
