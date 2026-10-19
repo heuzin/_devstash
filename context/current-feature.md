@@ -1,23 +1,18 @@
-# Current Feature: Logo Links to Dashboard
+# Current Feature
 
-Clicking the DevStash logo (icon + wordmark) in the app's top bar navigates to `/dashboard`.
+<!-- Feature name and short description -->
 
 ## Status
 
-Complete
+Not Started
 
 ## Goals
 
-- The DevStash logo icon and "DevStash" wordmark in `DashboardChrome`'s header (`src/components/dashboard/dashboard-chrome.tsx`) are wrapped in a single Next.js `Link` to `/dashboard`
-- Works from every page in the `(app)` route group (dashboard, `/items/[type]`, `/collections`, `/favorites`, `/profile`, `/settings`, etc.)
-- Keyboard accessible (focusable link with a visible focus state and an accessible label)
-- The sidebar toggle button next to the logo keeps working independently (not part of the link)
-- Visual appearance unchanged apart from a subtle hover/focus affordance
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- UI-only change; no server actions, utilities, or DB changes, so no new tests expected
-- The `(auth)` layout (`src/app/(auth)/layout.tsx`) also shows a DevStash logo, but it's for signed-out users on sign-in/register pages — out of scope unless requested (linking it to `/dashboard` would just bounce to `/sign-in`)
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
