@@ -1,18 +1,34 @@
-# Current Feature
+# Current Feature: Homepage Mockup
 
-<!-- Feature name and short description -->
+Static marketing homepage prototype for DevStash (HTML/CSS/JS, not part of the Next.js app).
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Output lives in `prototypes/homepage/` as `index.html`, `styles.css`, `script.js`
+- Fixed top nav (logo, Features/Pricing links, Sign In/Get Started) that becomes more opaque on scroll
+- Hero text: "Stop Losing Your Developer Knowledge" gradient headline, subheadline about scattered knowledge, CTA buttons
+- Hero visual, "chaos to order":
+  - Left: "Your knowledge today..." box with 8 floating icons (Notion, GitHub, Slack, VS Code, browser tabs, terminal, text file, bookmark) that drift, bounce off walls, subtly rotate/scale-pulse, and repel from the mouse cursor (requestAnimationFrame)
+  - Center: CSS-pulsing transform arrow
+  - Right: "...with DevStash" simplified dashboard mockup (sidebar nav + grid of item cards with type-colored top borders)
+- Features: 6 cards (Code Snippets, AI Prompts, Instant Search, Commands, Files & Docs, Collections), each using its item type accent color
+- AI section: left column with "Pro Feature" badge and AI capabilities checklist; right column with a code editor mockup showing "AI Generated Tags"
+- Pricing: Free ($0, 50 items, 3 collections) vs Pro ($8/mo, unlimited, AI features), Pro highlighted with "Most Popular" badge, monthly/yearly toggle ($72/yr)
+- CTA: "Ready to Organize Your Knowledge?" with button
+- Footer: logo, link columns, copyright with current year
+- Scroll-triggered fade-in animations
+- Responsive: on mobile, chaos/arrow/dashboard stack vertically, arrow rotates 90° to point down, grids go single column
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Spec: `context/features/homepage-mockup-spec.md`
+- Dark theme. Spec's accent palette: Snippet `#3b82f6`, Prompt `#f59e0b`, Command `#06b6d4`, Note `#22c55e`, File `#64748b`, Image `#ec4899`, URL `#6366f1` — this differs from the app's seeded type colors (Prompt `#8b5cf6`, Command `#f97316`, Note `#fde047`, File `#6b7280`, Link `#10b981`); confirm which to use before starting
+- Standalone prototype — no Next.js, Tailwind, or shadcn; plain HTML/CSS/JS, so the project's Tailwind/no-inline-style rules don't strictly apply
+- Brand logos (Notion, GitHub, Slack, VS Code) will need inline SVGs since lucide-react dropped brand icons
 
 ## History
 
