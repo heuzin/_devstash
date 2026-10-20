@@ -1,18 +1,26 @@
-# Current Feature
+# Current Feature: Homepage Nav on Auth Pages
 
-<!-- Feature name and short description -->
+Add the homepage's top navigation bar (`HomeNavbar`) to the sign-in and sign-up (`/register`) pages.
 
 ## Status
 
-Not Started
+Complete
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- `/sign-in` and `/register` render the same fixed top nav as the homepage: logo → `/`, Features/Pricing links, Sign In and Get Started buttons
+- Features/Pricing links work off the homepage, pointing to `/#features` and `/#pricing` instead of bare in-page anchors (the homepage still scrolls smoothly to its sections)
+- The auth form stays vertically centered and isn't hidden under the fixed nav (account for the 64px `h-16` header)
+- The standalone large `Logo` above the auth form is removed on pages that show the nav, so the logo doesn't appear twice
+- No horizontal overflow at 320/390/1440px; homepage nav looks and behaves the same as before
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- `HomeNavbar` lives in `src/components/homepage/home-navbar.tsx` (client component, becomes more opaque after 20px of scroll); reuse it rather than duplicating it
+- All auth pages share `src/app/(auth)/layout.tsx`, which also wraps `/forgot-password`, `/reset-password`, and `/verify-email`. Confirmed with the user: add the nav to the whole `(auth)` layout, so all auth pages get it
+- Optional: on `/sign-in`, the "Sign In" button links to the current page (and "Get Started" does the same on `/register`); consider whether to leave as-is or mark the active one
+- At 320px the navbar's "Get Started" button was clipped off-screen (pre-existing on the homepage too); fixed by hiding the logo wordmark below `sm` via `Logo`'s existing `wordmarkClassName`, matching `DashboardChrome`
+- UI-only change, so no new tests expected; verify with `npm run lint`, `npm run build`, and Playwright
 
 ## History
 

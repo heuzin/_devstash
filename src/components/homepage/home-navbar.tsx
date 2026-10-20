@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
-  { href: "#features", label: "Features" },
-  { href: "#pricing", label: "Pricing" },
+  { href: "/#features", label: "Features" },
+  { href: "/#pricing", label: "Pricing" },
 ];
 
 export function HomeNavbar() {
@@ -30,7 +30,7 @@ export function HomeNavbar() {
       )}
     >
       <Container className="flex h-16 items-center gap-8">
-        <Logo href="/" aria-label="DevStash home" />
+        <Logo href="/" aria-label="DevStash home" wordmarkClassName="hidden sm:inline" />
         <nav aria-label="Primary" className="hidden gap-6 text-sm text-muted-foreground sm:flex">
           {NAV_LINKS.map((link) => (
             <a key={link.href} href={link.href} className="transition-colors hover:text-foreground">
