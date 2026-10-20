@@ -35,6 +35,7 @@ export function FileListRow({ item }: { item: ItemSummary }) {
           size="icon"
           className="text-muted-foreground"
           onClick={(event) => event.stopPropagation()}
+          aria-label={`Download ${item.title}`}
           nativeButton={false}
           render={<a href={`/api/items/${item.id}/download`} download={item.fileName ?? undefined} />}
         >

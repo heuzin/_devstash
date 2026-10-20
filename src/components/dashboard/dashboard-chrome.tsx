@@ -50,6 +50,8 @@ export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
           <Input
             placeholder="Search... ⌘K"
             className="cursor-pointer pl-9"
+            aria-label="Search items and collections"
+            aria-haspopup="dialog"
             readOnly
             onClick={openCommandPalette}
           />

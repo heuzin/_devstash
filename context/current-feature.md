@@ -1,18 +1,20 @@
 # Current Feature
 
-<!-- Feature name and short description -->
+UI Review Fixes — fix the top findings from the ui-reviewer pass.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Monaco code editor renders with the light `vs` theme instead of the custom dark themes (themes were defined in `onMount`, after the `theme` prop is applied) — define them in `beforeMount`
+- File list download icon link has no accessible name — add `aria-label`
+- Top-bar search input has no accessible name — add `aria-label` and `aria-haspopup="dialog"`
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Branch: `fix/editor-theme-and-a11y-labels`
 
 ## History
 

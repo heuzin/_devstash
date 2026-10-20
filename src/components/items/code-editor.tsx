@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Editor, { type OnMount } from "@monaco-editor/react";
+import Editor, { type BeforeMount, type OnMount } from "@monaco-editor/react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEditorPreferences } from "@/components/settings/editor-preferences-provider";
@@ -48,9 +48,7 @@ export function CodeEditor({
     setHeight(Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, contentHeight)));
   }
 
-  const handleMount: OnMount = (editor, monaco) => {
-    editorRef.current = editor;
-
+  const handleBeforeMount: BeforeMount = (monaco) => {
     monaco.editor.defineTheme("devstash-dark", {
       base: "vs-dark",
       inherit: true,
@@ -112,7 +110,10 @@ export function CodeEditor({
         "scrollbarSlider.activeBackground": "#ffffff40",
       },
     });
+  };
 
+  const handleMount: OnMount = (editor) => {
+    editorRef.current = editor;
     syncHeight(editor);
     editor.onDidContentSizeChange(() => syncHeight(editor));
   };
@@ -144,6 +145,7 @@ export function CodeEditor({
         language={monacoLanguage}
         value={value}
         onChange={(next) => onChange?.(next ?? "")}
+        beforeMount={handleBeforeMount}
         onMount={handleMount}
         theme={MONACO_THEME_NAMES[preferences.theme]}
         options={{
