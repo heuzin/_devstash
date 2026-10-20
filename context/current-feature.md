@@ -1,18 +1,28 @@
-# Current Feature
+# Current Feature: Mobile Top Bar
 
-<!-- Feature name and short description -->
+Declutter the app's top bar (`DashboardChrome`) on small screens. At 390px the header currently overflows the page by ~162px: "New Item" is fully off-screen, "New Collection" is clipped, and the search input collapses to a 48px empty box. Target mobile layout: `[☰] [logo] ……… [🔍] [⭐] [📁+] [+]`.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- No horizontal page overflow from the top bar at 390px and 320px
+- "New Collection" and "New Item" become icon-only buttons below `sm` (with `aria-label`s); "New Item" stays the primary filled button
+- Search becomes an icon button opening the command palette below `sm`; full search input with "⌘K" hint from `sm` up
+- Logo shows icon only below `sm`, wordmark from `sm` up
+- Tighter mobile spacing (`px-4 py-3 gap-2`) and `flex justify-between` layout below `sm`; existing centered grid and spacing from `sm` up
+- Favorites star stays in the top bar
+- Desktop layout visually unchanged; sidebar toggle, logo link, favorites link, and both create dialogs still work at all widths
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Main file: `src/components/dashboard/dashboard-chrome.tsx`
+- `Logo` (`src/components/shared/logo.tsx`) is shared with the auth layout and homepage, so hiding the wordmark must be opt-in (prop or className), not a default change
+- Out of scope (considered, not chosen): a single `+` dropdown for both "New" actions on mobile, moving Favorites into the sidebar
+- UI-only, no server action/utility changes expected
+- Verify with Playwright at 320px, 390px, 768px, and 1440px
 
 ## History
 

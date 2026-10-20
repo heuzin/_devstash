@@ -34,14 +34,18 @@ export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-border px-6 py-4">
+      <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-4 sm:px-6 sm:py-4">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={toggleSidebar} aria-label="Toggle sidebar">
             <PanelLeft className="size-4" />
           </Button>
-          <Logo href="/dashboard" aria-label="DevStash dashboard" />
+          <Logo
+            href="/dashboard"
+            aria-label="DevStash dashboard"
+            wordmarkClassName="hidden sm:inline"
+          />
         </div>
-        <div className="relative mx-auto w-full max-w-md">
+        <div className="relative mx-auto hidden w-full max-w-md sm:block">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search... ⌘K"
@@ -54,19 +58,39 @@ export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
           <Button
             variant="ghost"
             size="icon"
+            className="sm:hidden"
+            onClick={openCommandPalette}
+            aria-label="Search"
+          >
+            <Search className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             nativeButton={false}
             render={<Link href="/favorites" />}
             aria-label="Favorites"
           >
             <Star className="size-4" />
           </Button>
-          <Button variant="outline" onClick={() => openCreateCollectionDialog()}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="sm:w-auto sm:gap-1.5 sm:px-2.5"
+            onClick={() => openCreateCollectionDialog()}
+            aria-label="New Collection"
+          >
             <FolderPlus className="size-4" />
-            New Collection
+            <span className="hidden sm:inline">New Collection</span>
           </Button>
-          <Button onClick={() => openCreateItemDialog()}>
+          <Button
+            size="icon"
+            className="sm:w-auto sm:gap-1.5 sm:px-2.5"
+            onClick={() => openCreateItemDialog()}
+            aria-label="New Item"
+          >
             <Plus className="size-4" />
-            New Item
+            <span className="hidden sm:inline">New Item</span>
           </Button>
         </div>
       </header>
@@ -88,7 +112,7 @@ export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
           </SheetContent>
         </Sheet>
 
-        <main className="flex-1 p-6">{children}</main>
+        <main className="min-w-0 flex-1 p-6">{children}</main>
       </div>
     </div>
   );

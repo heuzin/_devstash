@@ -7,9 +7,16 @@ interface LogoProps {
   size?: "default" | "lg";
   "aria-label"?: string;
   className?: string;
+  wordmarkClassName?: string;
 }
 
-export function Logo({ href, size = "default", className, ...props }: LogoProps) {
+export function Logo({
+  href,
+  size = "default",
+  className,
+  wordmarkClassName,
+  ...props
+}: LogoProps) {
   return (
     <Link
       href={href}
@@ -27,7 +34,9 @@ export function Logo({ href, size = "default", className, ...props }: LogoProps)
       >
         <Layers className="size-4" />
       </div>
-      <span className={cn("font-semibold", size === "lg" && "text-lg")}>DevStash</span>
+      <span className={cn("font-semibold", size === "lg" && "text-lg", wordmarkClassName)}>
+        DevStash
+      </span>
     </Link>
   );
 }
