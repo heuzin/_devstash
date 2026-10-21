@@ -14,6 +14,7 @@ import {
 import { getItemTypesWithCounts, getSearchItems } from "@/lib/db/items";
 import { getCurrentUser, getEditorPreferences } from "@/lib/db/user";
 import { isEmailVerificationEnabled } from "@/lib/email-verification";
+import { canUsePro } from "@/lib/usage-limits";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const [
@@ -46,7 +47,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <EditorPreferencesProvider initialPreferences={editorPreferences}>
       <CreateCollectionDialogProvider>
-        <CreateItemDialogProvider itemTypes={itemTypes} collections={collections}>
+        <CreateItemDialogProvider
+          itemTypes={itemTypes}
+          collections={collections}
+          canUseProFeatures={canUsePro({ isPro: user?.isPro ?? false })}
+        >
           <ItemDrawerProvider collections={collections}>
             <CommandPaletteProvider items={searchItems} collections={searchCollections}>
               <DashboardChrome sidebar={sidebar}>

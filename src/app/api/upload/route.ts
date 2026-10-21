@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { canUsePro } from "@/lib/usage-limits";
 import { buildObjectKey, deleteFromR2, keyFromFileUrl, uploadToR2 } from "@/lib/r2";
 import { UPLOAD_CONSTRAINTS, validateUpload, type UploadKind } from "@/lib/upload-constraints";
 
@@ -7,6 +9,17 @@ export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { isPro: true },
+  });
+  if (!canUsePro({ isPro: user?.isPro ?? false })) {
+    return NextResponse.json(
+      { success: false, error: "File and image uploads are a Pro feature" },
+      { status: 403 },
+    );
   }
 
   const formData = await request.formData();

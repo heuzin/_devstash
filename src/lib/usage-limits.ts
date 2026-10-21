@@ -1,9 +1,9 @@
+import { FREE_COLLECTION_LIMIT, FREE_ITEM_LIMIT } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 
-const ENFORCE_PLAN_LIMITS = process.env.ENFORCE_PLAN_LIMITS === "true";
+export { FREE_COLLECTION_LIMIT, FREE_ITEM_LIMIT };
 
-export const FREE_ITEM_LIMIT = 50;
-export const FREE_COLLECTION_LIMIT = 3;
+const ENFORCE_PLAN_LIMITS = process.env.ENFORCE_PLAN_LIMITS === "true";
 
 export function isPlanLimitEnforced() {
   return ENFORCE_PLAN_LIMITS;

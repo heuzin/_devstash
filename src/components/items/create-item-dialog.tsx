@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -39,6 +40,7 @@ interface CreateItemDialogProps {
   itemTypes: ItemTypeSummary[];
   collections: CollectionOption[];
   preselectedItemTypeId?: string;
+  canUseProFeatures: boolean;
   onCreated: () => void;
 }
 
@@ -48,6 +50,7 @@ export function CreateItemDialog({
   itemTypes,
   collections,
   preselectedItemTypeId,
+  canUseProFeatures,
   onCreated,
 }: CreateItemDialogProps) {
   const creatableTypes = itemTypes.filter((type) => CREATABLE_ITEM_TYPE_NAMES.has(type.name));
@@ -127,11 +130,19 @@ export function CreateItemDialog({
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {creatableTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.id}>
-                    {capitalize(type.name)}
-                  </SelectItem>
-                ))}
+                {creatableTypes.map((type) => {
+                  const isLocked = !canUseProFeatures && UPLOAD_TYPE_NAMES.has(type.name);
+                  return (
+                    <SelectItem key={type.id} value={type.id} disabled={isLocked}>
+                      {capitalize(type.name)}
+                      {isLocked && (
+                        <Badge variant="outline" className="text-[10px] uppercase">
+                          Pro
+                        </Badge>
+                      )}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

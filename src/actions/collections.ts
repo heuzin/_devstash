@@ -8,6 +8,7 @@ import {
   updateCollection as updateCollectionQuery,
   type CollectionSummary,
 } from "@/lib/db/collections";
+import { assertCanCreateCollection } from "@/lib/usage-limits";
 import { createCollectionSchema, updateCollectionSchema } from "@/lib/validations/collections";
 
 interface ActionResult {
@@ -33,6 +34,7 @@ export async function createCollection(data: unknown): Promise<ActionResult> {
   }
 
   try {
+    await assertCanCreateCollection(session.user.id);
     const created = await createCollectionQuery(session.user.id, parsed.data);
     return { success: true, data: created };
   } catch (error) {

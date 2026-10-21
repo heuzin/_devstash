@@ -1,18 +1,57 @@
-# Current Feature
+# Current Feature: Stripe Integration — Phase 2: Integration & UI
 
-<!-- Feature name and short description -->
+Make DevStash Pro purchasable end to end on top of Phase 1: a Stripe webhook keeping `User.isPro` in sync, Checkout and Customer Portal Server Actions, server-side gating on item/collection creation and uploads, subscription cancellation on account deletion, and a Billing card on `/settings`.
 
 ## Status
 
-Not Started
+Complete
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- **Webhook logic — `src/lib/billing.ts`** (testable; route stays thin):
+  - `isProStatus(status)` via `PRO_SUBSCRIPTION_STATUSES`
+  - `syncSubscription(subscriptionId)` — re-fetches the subscription from Stripe (never trusts the event snapshot), finds the user by `stripeCustomerId` then falls back to `subscription.metadata.userId`, writes `isPro`/`stripeCustomerId`/`stripeSubscriptionId` (subscription ID cleared to `null` when not Pro to avoid a `@unique` collision on resubscribe); logs and returns when no user is found
+  - `handleCheckoutCompleted(session)` — ignores non-subscription sessions; links `stripeCustomerId` via `client_reference_id`, then calls `syncSubscription`
+  - `handleStripeEvent(event)` — handles `checkout.session.completed` and `customer.subscription.created|updated|deleted`; ignores everything else
+- **Webhook route — `src/app/api/webhooks/stripe/route.ts`:** `stripe.webhooks.constructEvent(await request.text(), signature, STRIPE_WEBHOOK_SECRET)` (never `request.json()` first); `400` missing/invalid signature, `500` handler error (Stripe retries), `200` otherwise incl. ignored types; **not** added to `proxy.ts`
+- **`src/actions/billing.ts`** (`ActionResult`, validate → `auth()` → `try/catch`, `redirect()` **outside** the `try`):
+  - `createCheckoutSession(interval)` — zod-validates against `BILLING_INTERVALS`; rejects unauthenticated, missing price ID ("Billing is not configured"), and already-Pro users; gets or creates the Stripe Customer and saves `stripeCustomerId` **immediately** (Checkout opened twice reuses one customer); `subscription`-mode session with `customer`, `client_reference_id`, `subscription_data.metadata.userId`, `allow_promotion_codes: true`, `success_url`/`cancel_url` → `/settings?checkout=success|canceled` via `getSiteUrl()`; redirects to the Checkout URL
+  - `createPortalSession()` — rejects unauthenticated and no-`stripeCustomerId` users; redirects to a Billing Portal session with `return_url` `/settings`
+- **Server-side gating** (no-ops while `ENFORCE_PLAN_LIMITS` is unset):
+  - `createItem` action (`src/actions/items.ts`) — `assertCanCreateItem(userId)` inside the existing `try`, before the query
+  - `createItem` query (`src/lib/db/items.ts`) — `assertCanUseProFeature(userId, "File and image uploads")` next to the existing upload-type branch
+  - `createCollection` action (`src/actions/collections.ts`) — `assertCanCreateCollection(userId)` inside the existing `try`
+  - `POST /api/upload` — after auth, read `isPro` from the DB; `!canUsePro(...)` → `403` `{ success: false, error: "File and image uploads are a Pro feature" }` before touching R2
+  - **Not gated:** `updateItem`, `deleteItem`, favorite/pin toggles, collection edit/delete, `GET /api/items/[id]/download`
+- **Account deletion:** `deleteAccount` (`src/actions/profile.ts`) cancels `stripeSubscriptionId` via `stripe.subscriptions.cancel` before deleting — best-effort, logged on failure, never blocks deletion
+- **`src/components/settings/billing-card.tsx`** (client, first card on `/settings`): props `isPro`, `hasBillingAccount`, `enforced`, `usage: { items, collections }`
+  - Free: usage vs. limits ("12 / 50 items", "2 / 3 collections"), Monthly/Yearly `Switch` toggle styled like homepage `PricingCards` ("Save 25%" pill, $8/month vs. $72/year), "Upgrade to Pro" → `createCheckoutSession(interval)` in `useTransition`, `toast.error` on failure
+  - Pro: "Pro" badge + "Manage subscription" → `createPortalSession()`
+  - `!enforced`: muted "Plan limits are not enforced in this environment"
+  - Buttons disabled while pending
+- **`src/components/settings/checkout-status-toast.tsx`** (client): one-time toast from `?checkout=success|canceled`; success → "Welcome to Pro! It may take a few seconds to activate.", `router.replace("/settings")` + `router.refresh()`, re-refresh every ~2–3s a few times if still not Pro; canceled → "Checkout canceled."
+- **`/settings` page:** `<BillingCard>` first (`user.isPro`, `user.hasBillingAccount`, `isPlanLimitEnforced()`, usage from `getItemStats`/`getCollectionStats`); `<CheckoutStatusToast />` inside `<Suspense>`
+- **`CreateItemDialog` (UX only):** `canUseProFeatures` from `(app)/layout.tsx` through `CreateItemDialogProvider`; when false, disable File/Image in the type `Select` with the sidebar's outline `PRO` badge. `AddTypeItemButton` on `/items/files`/`/items/images` stays visible
+- **Homepage:** leave `pricing-cards.tsx` CTAs pointing at `/register`
+- **Docs:** mark the "downgraded user's data" open question in `context/project-overview.md` as decided
+- **Unit tests:**
+  - `src/lib/billing.test.ts` (mock `@/lib/stripe` with `subscriptions.retrieve` as `vi.fn()` + real `PRO_SUBSCRIPTION_STATUSES`, and `@/lib/prisma`): `isProStatus` for every status; `syncSubscription` by customer ID / metadata fallback / no user / cancelled clears sub ID; `handleCheckoutCompleted` non-subscription ignored, links then syncs; `handleStripeEvent` routes the four types, unknown no-op
+  - `src/actions/billing.test.ts` (mock `@/auth`, `@/lib/stripe`, `@/lib/site-url`, `next/navigation` `redirect`): Checkout invalid interval / no session / missing price / already Pro / customer reused vs. created+saved / redirect URL; Portal no session / no customer / success
+  - `items.test.ts` / `collections.test.ts`: over-limit returns the friendly error and the create query isn't called (mock `@/lib/usage-limits`)
+  - `profile.test.ts`: `deleteAccount` cancels an existing subscription, still deletes when cancel fails
+- `npm run test`, `npm run lint`, `npm run build` pass
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Spec: `context/features/stripe-phase-2-spec.md`; reference `docs/stripe-integration-plan.md` (§2, §3, §4.3–§4.8, §5, §7, §8)
+- Decisions: `past_due` keeps Pro (already in `PRO_SUBSCRIPTION_STATUSES`); billing lives as a card on `/settings` (no `/settings/billing` route); downgrade blocks new creation beyond free limits but never deletes, hides, or makes existing data read-only; no trial
+- Existing `toast.error(result.error)` paths surface the limit messages — no new client error handling. Accept the small count-then-create race (no transactions/locking)
+- Phase 1 carry-over: `src/lib/stripe.ts` falls back to a `"sk_unconfigured"` placeholder key when unset, so imports from `profile.ts`/`billing.ts` stay build-safe; "Billing is not configured" keys off the missing price ID
+- Env: `STRIPE_SECRET_KEY` (`sk_test_…`), `STRIPE_WEBHOOK_SECRET` (`whsec_…` from `stripe listen`; differs in deployment), `STRIPE_PRICE_ID_MONTHLY`, `STRIPE_PRICE_ID_YEARLY`, `ENFORCE_PLAN_LIMITS=true` locally only while testing gating
+- Stripe test-mode setup (needs the user's Stripe account): product "DevStash Pro" with $8/mo and $72/yr recurring USD prices; Customer Portal with cancel-at-period-end, payment method updates, invoice history, monthly↔yearly switching, return URL `/settings`, **saved once**; `stripe listen --forward-to localhost:3000/api/webhooks/stripe --events checkout.session.completed,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted`
+- Manual verification (Stripe CLI running, `ENFORCE_PLAN_LIMITS="true"`, dev DB): limit toasts at 50 items / 3 collections, file/image create rejected and direct `POST /api/upload` → `403`; existing files still open/download; Free card usage → monthly and yearly Checkout with `4242…` → success toast, card flips to Pro, DB has `isPro=true` + both IDs; double Checkout → one Customer; Pro lifts all limits; Portal plan switch keeps Pro; cancel at period end keeps Pro, `stripe subscriptions cancel` revokes it and clears the sub ID; declined `4000 0000 0000 0341` and 3DS `4000 0025 0000 3155` cards; unsigned webhook → `400`, unknown-customer trigger → logged `200`, resent event idempotent; deleting a Pro account cancels its subscription
+- Cleanup afterward: demo user back to `isPro=false` with no Stripe IDs; remove test accounts
+- Out of scope: live-mode product/prices/webhook and production `ENFORCE_PLAN_LIMITS`; `React.cache` session dedupe (§6); subscription-detail migration (§3.6, so no "renews on" date); gating AI/export/custom types
 
 ## History
 

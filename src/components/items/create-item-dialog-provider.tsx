@@ -23,10 +23,12 @@ export function useCreateItemDialog() {
 export function CreateItemDialogProvider({
   itemTypes,
   collections,
+  canUseProFeatures,
   children,
 }: {
   itemTypes: ItemTypeSummary[];
   collections: CollectionOption[];
+  canUseProFeatures: boolean;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -49,6 +51,7 @@ export function CreateItemDialogProvider({
         itemTypes={itemTypes}
         collections={collections}
         preselectedItemTypeId={preselectedItemTypeId}
+        canUseProFeatures={canUseProFeatures}
         onCreated={() => router.refresh()}
       />
     </CreateItemDialogContext.Provider>

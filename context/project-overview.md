@@ -621,7 +621,7 @@ Other rules:
 - [ ] Search implementation: Prisma `contains`, Postgres full-text search (`tsvector`), or an external service?
 - [ ] File size limits per upload and total storage per Pro user?
 - [ ] Should export formats beyond JSON / ZIP (e.g., Markdown) be supported?
-- [ ] What happens to a downgraded user's data when it exceeds free limits (read-only vs. blocked creation)?
+- [x] What happens to a downgraded user's data when it exceeds free limits (read-only vs. blocked creation)? **Decided:** block new creation beyond the free limits; existing data is never deleted, hidden, or made read-only.
 - [ ] Should AI features have per-user rate limits or usage caps to control cost?
 
 ---

@@ -4,6 +4,7 @@ import type { ContentType } from "@/generated/prisma/client";
 import type { CreateItemInput, UpdateItemInput } from "@/lib/validations/items";
 import { CREATABLE_ITEM_TYPE_NAMES, UPLOAD_TYPE_NAMES, URL_TYPE_NAMES } from "@/lib/item-types";
 import { R2_PUBLIC_URL, deleteFromR2, keyFromFileUrl } from "@/lib/r2";
+import { assertCanUseProFeature } from "@/lib/usage-limits";
 import {
   DASHBOARD_RECENT_ITEMS_LIMIT,
   ITEMS_PER_PAGE,
@@ -317,6 +318,7 @@ export async function createItem(userId: string, data: CreateItemInput): Promise
 
   const isUploadType = UPLOAD_TYPE_NAMES.has(itemType.name);
   if (isUploadType) {
+    await assertCanUseProFeature(userId, "File and image uploads");
     if (!data.fileUrl || !data.fileName || !data.fileSize) {
       throw new Error("A file upload is required for this type");
     }

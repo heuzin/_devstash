@@ -9,6 +9,7 @@ import {
   updateItem as updateItemQuery,
   type ItemDetail,
 } from "@/lib/db/items";
+import { assertCanCreateItem } from "@/lib/usage-limits";
 import { createItemSchema, updateItemSchema } from "@/lib/validations/items";
 
 interface ActionResult {
@@ -34,6 +35,7 @@ export async function createItem(data: unknown): Promise<ActionResult> {
   }
 
   try {
+    await assertCanCreateItem(session.user.id);
     const created = await createItemQuery(session.user.id, parsed.data);
     return { success: true, data: created };
   } catch (error) {
