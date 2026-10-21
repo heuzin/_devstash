@@ -11,6 +11,8 @@ export interface CurrentUser {
   emailVerified: boolean;
   hasPassword: boolean;
   createdAt: Date;
+  isPro: boolean;
+  hasBillingAccount: boolean;
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -19,7 +21,13 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { emailVerified: true, password: true, createdAt: true },
+    select: {
+      emailVerified: true,
+      password: true,
+      createdAt: true,
+      isPro: true,
+      stripeCustomerId: true,
+    },
   });
   if (!dbUser) return null;
 
@@ -31,6 +39,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     emailVerified: dbUser.emailVerified != null,
     hasPassword: dbUser.password != null,
     createdAt: dbUser.createdAt,
+    isPro: dbUser.isPro,
+    hasBillingAccount: dbUser.stripeCustomerId != null,
   };
 }
 

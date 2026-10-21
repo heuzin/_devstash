@@ -21,16 +21,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
       }
+
+      // Re-read isPro on every call so Stripe webhook updates show up on the
+      // next request without signing out.
+      const userId = token.id ?? token.sub;
+      if (userId) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { isPro: true },
+        });
+        token.isPro = dbUser?.isPro ?? false;
+      }
+
       return token;
     },
     session({ session, token }) {
       if (token.id) {
-        session.user.id = token.id as string;
+        session.user.id = token.id;
       }
+      session.user.isPro = token.isPro ?? false;
       return session;
     },
   },

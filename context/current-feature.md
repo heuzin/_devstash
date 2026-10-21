@@ -1,18 +1,47 @@
-# Current Feature
+# Current Feature: Stripe Integration — Phase 1: Core Infrastructure
 
-<!-- Feature name and short description -->
+Groundwork for DevStash Pro ($8/mo or $72/yr) with no user-facing billing yet: Stripe SDK + client singleton and price config, the `usage-limits` gating module, and `isPro` surfaced on the session and `getCurrentUser`. Nothing is wired into actions, routes, or UI, so behavior is unchanged for every user.
 
 ## Status
 
-Not Started
+Complete
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- `stripe` installed; no migration (`User.isPro`, `stripeCustomerId`, `stripeSubscriptionId` already exist)
+- New `src/lib/usage-limits.ts` (follows `src/lib/email-verification.ts` pattern, flag read once at module load):
+  - `ENFORCE_PLAN_LIMITS = process.env.ENFORCE_PLAN_LIMITS === "true"` (defaults to not enforced)
+  - `FREE_ITEM_LIMIT = 50`, `FREE_COLLECTION_LIMIT = 3`
+  - `isPlanLimitEnforced()`, `canUsePro(user)` (`!ENFORCE_PLAN_LIMITS || user.isPro`)
+  - `assertCanUseProFeature(userId, feature)` — throws `"<feature> is a Pro feature. Upgrade in Settings to unlock it."`
+  - `assertCanCreateItem(userId)` / `assertCanCreateCollection(userId)` — Pro/unenforced bypass (skip count query entirely), otherwise throw the friendly 50-item / 3-collection message when count `>=` limit
+  - Private `getIsPro(userId)` (`findUnique` selecting only `isPro`, `false` if user not found)
+- New `src/lib/stripe.ts` singleton (matches `resend.ts`/`r2.ts`):
+  - `console.warn` once if `STRIPE_SECRET_KEY` is missing, never throw — app must build/run without Stripe
+  - `new Stripe(process.env.STRIPE_SECRET_KEY ?? "")` with **no** `apiVersion`
+  - `BILLING_INTERVALS`/`BillingInterval`, `STRIPE_PRICE_IDS` from `STRIPE_PRICE_ID_MONTHLY`/`_YEARLY`
+  - `PRO_SUBSCRIPTION_STATUSES` = `active`, `trialing`, `past_due`
+- `.env.example`: add `ENFORCE_PLAN_LIMITS=""`, keep existing `STRIPE_*` entries
+- `src/types/next-auth.d.ts`: `Session.user.isPro: boolean`; augment `next-auth/jwt` `JWT` with `id?: string`, `isPro?: boolean`
+- `src/auth.ts`: async `jwt` callback re-reads `isPro` from the DB on every call (via `token.id`, falling back to `token.sub`); `session` callback copies `token.isPro ?? false` — **no** callbacks in `auth.config.ts` (edge proxy must never hit Prisma)
+- `src/lib/db/user.ts`: `getCurrentUser` selects `isPro` + `stripeCustomerId`, exposes `isPro` and `hasBillingAccount` (`!!stripeCustomerId`) without leaking the raw customer ID
+- Unit tests in `src/lib/usage-limits.test.ts` (Prisma mock + `vi.stubEnv`/`vi.resetModules`/dynamic import, like `email-verification.test.ts`):
+  - `isPlanLimitEnforced` for `"true"`/unset/`"false"`/`"TRUE"`
+  - `canUsePro` with flag off/on × free/Pro
+  - Item limit 49 ok / 50 & 51 reject; collection limit 2 ok / 3 rejects
+  - Pro bypass and flag-off skip count (and `isPro`) queries
+  - User not found treated as free
+  - `assertCanUseProFeature` flag on free rejects (message names feature), Pro resolves, flag off resolves
+- `npm run test`, `npm run lint`, `npm run build` pass, build succeeding with `STRIPE_SECRET_KEY` unset
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Spec: `context/features/stripe-phase-1-spec.md`; reference `docs/stripe-integration-plan.md` (§1, §4.1, §4.2, §5, §5.1, §5.2)
+- Server-side gating must read `isPro` from the DB, never the session — the session value is a convenience only
+- With `ENFORCE_PLAN_LIMITS` unset, every user (incl. the demo user, already over the free collection limit) keeps full access
+- Env vars: `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID_MONTHLY`, `STRIPE_PRICE_ID_YEARLY`, `ENFORCE_PLAN_LIMITS` — all may be empty in Phase 1; `STRIPE_WEBHOOK_SECRET` only needed in Phase 2
+- Verification: sign in as demo user, flip `isPro` to `true` in the dev DB, reload — `auth()` reflects it without signing out; flip back afterward. Creating items/collections still works with the flag unset
+- Out of scope (Phase 2): calling the asserts from `createItem`/`createCollection`/`POST /api/upload`, webhook route, `src/lib/billing.ts`, Checkout/Portal actions, billing UI/toasts/Pro UI in `CreateItemDialog`, cancelling subscription on account deletion, `React.cache` session dedupe, subscription-detail migration
 
 ## History
 
