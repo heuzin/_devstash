@@ -8,6 +8,7 @@ import type { ItemTypeSummary } from "@/lib/db/items";
 
 interface CreateItemDialogContextValue {
   open: (preselectedItemTypeId?: string) => void;
+  canUseProFeatures: boolean;
 }
 
 const CreateItemDialogContext = createContext<CreateItemDialogContextValue | null>(null);
@@ -42,6 +43,7 @@ export function CreateItemDialogProvider({
           setPreselectedItemTypeId(itemTypeId);
           setOpen(true);
         },
+        canUseProFeatures,
       }}
     >
       {children}

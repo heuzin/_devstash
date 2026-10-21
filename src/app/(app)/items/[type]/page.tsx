@@ -5,7 +5,7 @@ import { ItemGrid } from "@/components/items/item-grid";
 import { PaginationControls } from "@/components/shared/pagination-controls";
 import { getItemsByTypeSlug } from "@/lib/db/items";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
-import { CREATABLE_ITEM_TYPE_NAMES, FILE_TYPE_NAME } from "@/lib/item-types";
+import { CREATABLE_ITEM_TYPE_NAMES, FILE_TYPE_NAME, UPLOAD_TYPE_NAMES } from "@/lib/item-types";
 import { parsePageParam } from "@/lib/pagination";
 
 function capitalize(value: string) {
@@ -36,7 +36,11 @@ export default async function ItemsByTypePage({
         <h1 className="text-2xl font-semibold">{capitalize(itemType.slug)}</h1>
         <span className="text-sm text-muted-foreground">{pagination.totalCount} items</span>
         {isCreatable && (
-          <AddTypeItemButton itemTypeId={itemType.id} label={`Add ${capitalize(itemType.name)}`} />
+          <AddTypeItemButton
+            itemTypeId={itemType.id}
+            label={`Add ${capitalize(itemType.name)}`}
+            requiresPro={UPLOAD_TYPE_NAMES.has(itemType.name)}
+          />
         )}
       </div>
 

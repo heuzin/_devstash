@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockReset } from "vitest-mock-extended";
 
 vi.mock("@/auth", () => ({
@@ -280,6 +280,80 @@ describe("createItem", () => {
     expect(prismaMock.collection.findMany).not.toHaveBeenCalled();
     const createArgs = prismaMock.item.create.mock.calls[0][0];
     expect(createArgs.data.collections).toEqual({ create: [] });
+  });
+});
+
+// The tests above run with ENFORCE_PLAN_LIMITS unset, which already covers
+// uploads being allowed for everyone when limits aren't enforced.
+describe("createItem with plan limits enforced", () => {
+  const FILE_INPUT = {
+    ...VALID_INPUT,
+    itemTypeId: TYPE_ID,
+    content: null,
+    url: null,
+    fileUrl: `${R2_PUBLIC_URL}/user_123/abc-doc.pdf`,
+    fileName: "doc.pdf",
+    fileSize: 2048,
+  };
+
+  // usage-limits reads ENFORCE_PLAN_LIMITS at import time, so load a fresh
+  // module graph; resetting modules also re-creates the auth and prisma mocks.
+  async function loadEnforced(isPro: boolean, typeName: string) {
+    vi.stubEnv("ENFORCE_PLAN_LIMITS", "true");
+    vi.resetModules();
+    const { auth: freshAuth } = await import("@/auth");
+    const { prismaMock: freshPrisma } = await import("@/lib/prisma-mock");
+    const { createItem: freshCreateItem } = await import("./items");
+
+    // @ts-expect-error -- only the fields the action reads are relevant here
+    vi.mocked(freshAuth).mockResolvedValue({ user: { id: USER_ID } });
+    freshPrisma.user.findUnique.mockResolvedValue({ isPro } as never);
+    freshPrisma.item.count.mockResolvedValue(0);
+    freshPrisma.itemType.findFirst.mockResolvedValue({
+      id: TYPE_ID,
+      name: typeName,
+      slug: `${typeName}s`,
+      icon: "File",
+      color: "#6b7280",
+    } as never);
+    freshPrisma.item.create.mockResolvedValue({ ...DB_ITEM, contentType: "FILE" } as never);
+
+    return { prisma: freshPrisma, createItem: freshCreateItem };
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it.each(["file", "image"])("rejects a %s item for a free user", async (typeName) => {
+    const { prisma, createItem: create } = await loadEnforced(false, typeName);
+
+    const result = await create(FILE_INPUT);
+
+    expect(result).toEqual({
+      success: false,
+      error: "File and image uploads is a Pro feature. Upgrade in Settings to unlock it.",
+    });
+    expect(prisma.item.create).not.toHaveBeenCalled();
+  });
+
+  it("creates a file item for a Pro user", async () => {
+    const { prisma, createItem: create } = await loadEnforced(true, "file");
+
+    const result = await create(FILE_INPUT);
+
+    expect(result.success).toBe(true);
+    expect(prisma.item.create).toHaveBeenCalled();
+  });
+
+  it("still lets a free user create non-upload items", async () => {
+    const { prisma, createItem: create } = await loadEnforced(false, "snippet");
+    prisma.item.create.mockResolvedValue(DB_ITEM as never);
+
+    const result = await create({ ...VALID_INPUT, itemTypeId: TYPE_ID });
+
+    expect(result.success).toBe(true);
+    expect(prisma.item.create).toHaveBeenCalled();
   });
 });
 

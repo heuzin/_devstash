@@ -54,8 +54,17 @@ export function CreateItemDialog({
   onCreated,
 }: CreateItemDialogProps) {
   const creatableTypes = itemTypes.filter((type) => CREATABLE_ITEM_TYPE_NAMES.has(type.name));
+  const isLockedType = (type: ItemTypeSummary) =>
+    !canUseProFeatures && UPLOAD_TYPE_NAMES.has(type.name);
 
-  const [itemTypeId, setItemTypeId] = useState(preselectedItemTypeId ?? creatableTypes[0]?.id ?? "");
+  // Never start on a Pro-only type the user can't use, even if it was preselected.
+  function getInitialItemTypeId() {
+    const preselected = creatableTypes.find((type) => type.id === preselectedItemTypeId);
+    if (preselected && !isLockedType(preselected)) return preselected.id;
+    return creatableTypes.find((type) => !isLockedType(type))?.id ?? "";
+  }
+
+  const [itemTypeId, setItemTypeId] = useState(getInitialItemTypeId);
   const [form, setForm] = useState(EMPTY_FORM);
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [collectionIds, setCollectionIds] = useState<string[]>([]);
@@ -67,7 +76,7 @@ export function CreateItemDialog({
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setItemTypeId(preselectedItemTypeId ?? creatableTypes[0]?.id ?? "");
+      setItemTypeId(getInitialItemTypeId());
       setForm(EMPTY_FORM);
       setUploadedFile(null);
       setCollectionIds([]);
@@ -131,7 +140,7 @@ export function CreateItemDialog({
               </SelectTrigger>
               <SelectContent>
                 {creatableTypes.map((type) => {
-                  const isLocked = !canUseProFeatures && UPLOAD_TYPE_NAMES.has(type.name);
+                  const isLocked = isLockedType(type);
                   return (
                     <SelectItem key={type.id} value={type.id} disabled={isLocked}>
                       {capitalize(type.name)}

@@ -1,18 +1,29 @@
-# Current Feature
+# Current Feature: Pro-Only File & Image Uploads
 
-<!-- Feature name and short description -->
+Prevent users without a Pro subscription from uploading any files or images.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Free users cannot upload files or images through any UI entry point:
+  - The generic "New Item" dialog keeps File/Image disabled with the PRO badge (already in place)
+  - The "Add File" / "Add Image" buttons on `/items/files` and `/items/images` no longer open the dialog with a locked type preselected — show them as locked (PRO badge, upgrade prompt/link to `/settings`) instead
+  - If a locked upload type is ever preselected, the dialog falls back to the first non-locked type rather than rendering `FileUpload`
+- Server-side enforcement stays the source of truth, reading `isPro` from the DB (never the session):
+  - `POST /api/upload` returns `403` before touching R2 (already in place)
+  - `createItem` rejects `file`/`image` items via `assertCanUseProFeature` (already in place)
+- Gating respects the existing `ENFORCE_PLAN_LIMITS` flag (`canUsePro` / `usage-limits.ts`) — no new gating mechanism
+- Existing file/image items stay viewable, downloadable, editable, and deletable for downgraded users (block new creation only, per the decided downgrade policy)
+- Add unit tests for the upload gating branches left uncovered in Stripe Phase 2: `createItem` rejecting file/image for a non-Pro user when enforced, and allowing it when Pro or unenforced
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Most server-side gating already shipped in Stripe Phase 2 (`src/app/api/upload/route.ts`, `src/lib/db/items.ts` → `assertCanUseProFeature`, `CreateItemDialog`'s `canUseProFeatures` prop). The real gap is the type-specific `AddTypeItemButton` (`src/components/items/add-type-item-button.tsx`), which preselects File/Image and bypasses the disabled Select option — the user reaches `FileUpload` and only hits the `403` after picking a file.
+- `canUseProFeatures` is already computed in `src/app/(app)/layout.tsx`; `/items/[type]/page.tsx` will need the same value (or read it via `CreateItemDialogProvider`'s context) to lock the Add button.
+- Verify with `ENFORCE_PLAN_LIMITS="true"` and the demo user at `isPro=false`, then flip `isPro=true` in the dev DB to confirm uploads unlock; restore `isPro=false` afterward.
 
 ## History
 
