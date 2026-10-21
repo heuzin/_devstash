@@ -80,8 +80,8 @@ type CollectionInput = {
 function buildCollections(): CollectionInput[] {
   return [
     {
-      name: "React Patterns",
-      description: "Reusable React patterns and hooks",
+      name: "Frontend",
+      description: "React patterns, hooks, and UI/UX references",
       defaultTypeName: "snippet",
       items: [
         {
@@ -131,6 +131,30 @@ Tabs.Tab = function Tab({ id, children }: { id: string; children: ReactNode }) {
   );
 }`,
         },
+        {
+          typeName: "link",
+          title: "Tailwind CSS Documentation",
+          description: "Utility-first CSS framework reference",
+          url: "https://tailwindcss.com/docs",
+        },
+        {
+          typeName: "link",
+          title: "shadcn/ui",
+          description: "Composable React component library",
+          url: "https://ui.shadcn.com",
+        },
+        {
+          typeName: "link",
+          title: "Material Design 3",
+          description: "Google's open-source design system",
+          url: "https://m3.material.io",
+        },
+        {
+          typeName: "link",
+          title: "Lucide Icons",
+          description: "Open-source icon library",
+          url: "https://lucide.dev/icons",
+        },
       ],
     },
     {
@@ -166,7 +190,7 @@ Code:
     },
     {
       name: "DevOps",
-      description: "Infrastructure and deployment resources",
+      description: "Infrastructure, deployment, and shell commands",
       defaultTypeName: "snippet",
       items: [
         {
@@ -206,13 +230,6 @@ CMD ["npm", "start"]`,
           description: "Official Kubernetes documentation",
           url: "https://kubernetes.io/docs/home/",
         },
-      ],
-    },
-    {
-      name: "Terminal Commands",
-      description: "Useful shell commands for everyday development",
-      defaultTypeName: "command",
-      items: [
         {
           typeName: "command",
           title: "Undo Last Git Commit",
@@ -232,37 +249,6 @@ CMD ["npm", "start"]`,
           typeName: "command",
           title: "Clean Install npm Dependencies",
           content: "rm -rf node_modules package-lock.json && npm install",
-        },
-      ],
-    },
-    {
-      name: "Design Resources",
-      description: "UI/UX resources and references",
-      defaultTypeName: "link",
-      items: [
-        {
-          typeName: "link",
-          title: "Tailwind CSS Documentation",
-          description: "Utility-first CSS framework reference",
-          url: "https://tailwindcss.com/docs",
-        },
-        {
-          typeName: "link",
-          title: "shadcn/ui",
-          description: "Composable React component library",
-          url: "https://ui.shadcn.com",
-        },
-        {
-          typeName: "link",
-          title: "Material Design 3",
-          description: "Google's open-source design system",
-          url: "https://m3.material.io",
-        },
-        {
-          typeName: "link",
-          title: "Lucide Icons",
-          description: "Open-source icon library",
-          url: "https://lucide.dev/icons",
         },
       ],
     },
