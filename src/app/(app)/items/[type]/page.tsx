@@ -2,11 +2,14 @@ import { notFound } from "next/navigation";
 import { AddTypeItemButton } from "@/components/items/add-type-item-button";
 import { FileList } from "@/components/items/file-list";
 import { ItemGrid } from "@/components/items/item-grid";
+import { ProUpgradePrompt } from "@/components/items/pro-upgrade-prompt";
 import { PaginationControls } from "@/components/shared/pagination-controls";
 import { getItemsByTypeSlug } from "@/lib/db/items";
+import { getCurrentUser } from "@/lib/db/user";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
-import { CREATABLE_ITEM_TYPE_NAMES, FILE_TYPE_NAME, UPLOAD_TYPE_NAMES } from "@/lib/item-types";
+import { CREATABLE_ITEM_TYPE_NAMES, FILE_TYPE_NAME, PRO_ITEM_TYPE_SLUGS } from "@/lib/item-types";
 import { parsePageParam } from "@/lib/pagination";
+import { canUsePro } from "@/lib/usage-limits";
 
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -19,6 +22,13 @@ export default async function ItemsByTypePage({
   const { type } = await params;
   const { page: pageParam } = await searchParams;
   const page = parsePageParam(pageParam);
+
+  if (PRO_ITEM_TYPE_SLUGS.has(type)) {
+    const user = await getCurrentUser();
+    if (!canUsePro({ isPro: user?.isPro ?? false })) {
+      return <ProUpgradePrompt typeLabel={capitalize(type)} />;
+    }
+  }
 
   const result = await getItemsByTypeSlug(type, page);
   if (!result) {
@@ -39,7 +49,6 @@ export default async function ItemsByTypePage({
           <AddTypeItemButton
             itemTypeId={itemType.id}
             label={`Add ${capitalize(itemType.name)}`}
-            requiresPro={UPLOAD_TYPE_NAMES.has(itemType.name)}
           />
         )}
       </div>

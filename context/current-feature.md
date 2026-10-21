@@ -1,18 +1,23 @@
 # Current Feature
 
-<!-- Feature name and short description -->
+Pro-Only Type Pages: free users visiting `/items/files` or `/items/images` see an upgrade page instead of the item list.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- `/items/files` and `/items/images` render an upgrade prompt (not the list) for users who can't use Pro features
+- Items for those types are not queried for free users
+- Upgrade prompt explains the Pro benefits and links to the Billing card on `/settings`
+- Respects `ENFORCE_PLAN_LIMITS` (no gating when unset), same as the rest of the Pro gating
+- Other type pages and Pro users are unaffected
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Pro type slugs move into `src/lib/item-types.ts` as a shared `PRO_ITEM_TYPE_SLUGS`, reused by the sidebar's PRO badge
+- `AddTypeItemButton`'s locked branch becomes unreachable once free users can't see these pages, so it's removed
 
 ## History
 

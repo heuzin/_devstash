@@ -17,6 +17,9 @@ export const URL_TYPE_NAMES = new Set(["link"]);
 // extensions, mime types) apply to each.
 export const UPLOAD_TYPE_NAMES = new Set(["file", "image"]);
 
+// Slugs of the type list pages that require Pro.
+export const PRO_ITEM_TYPE_SLUGS = new Set(["files", "images"]);
+
 // Types whose content renders in the Monaco-backed CodeEditor instead of a
 // plain Textarea, and the language Monaco falls back to when none is set.
 export const CODE_EDITOR_FALLBACK_LANGUAGE: Record<string, string> = {

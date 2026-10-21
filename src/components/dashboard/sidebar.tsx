@@ -3,11 +3,10 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
+import { PRO_ITEM_TYPE_SLUGS } from "@/lib/item-types";
 import type { CollectionSummary } from "@/lib/db/collections";
 import type { ItemTypeSummary } from "@/lib/db/items";
 import type { CurrentUser } from "@/lib/db/user";
-
-const PRO_ITEM_TYPE_SLUGS = new Set(["files", "images"]);
 
 interface SidebarProps {
   itemTypes: ItemTypeSummary[];
