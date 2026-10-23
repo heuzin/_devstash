@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { FolderPlus, PanelLeft, Plus, Search, Star } from "lucide-react";
+import { FolderPlus, PanelLeft, Plus, Search, Star, Zap } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,10 +14,11 @@ import { cn } from "@/lib/utils";
 
 interface DashboardChromeProps {
   sidebar: ReactNode;
+  showUpgrade: boolean;
   children: ReactNode;
 }
 
-export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
+export function DashboardChrome({ sidebar, showUpgrade, children }: DashboardChromeProps) {
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { open: openCreateItemDialog } = useCreateItemDialog();
@@ -57,6 +58,19 @@ export function DashboardChrome({ sidebar, children }: DashboardChromeProps) {
           />
         </div>
         <div className="ml-auto flex items-center gap-2">
+          {showUpgrade && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground sm:w-auto sm:gap-1.5 sm:px-2.5"
+              nativeButton={false}
+              render={<Link href="/upgrade" />}
+              aria-label="Upgrade"
+            >
+              <Zap className="size-4" />
+              <span className="hidden sm:inline">Upgrade</span>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"

@@ -1,8 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AddTypeItemButton } from "@/components/items/add-type-item-button";
 import { FileList } from "@/components/items/file-list";
 import { ItemGrid } from "@/components/items/item-grid";
-import { ProUpgradePrompt } from "@/components/items/pro-upgrade-prompt";
 import { PaginationControls } from "@/components/shared/pagination-controls";
 import { getItemsByTypeSlug } from "@/lib/db/items";
 import { getCurrentUser } from "@/lib/db/user";
@@ -26,7 +25,7 @@ export default async function ItemsByTypePage({
   if (PRO_ITEM_TYPE_SLUGS.has(type)) {
     const user = await getCurrentUser();
     if (!canUsePro({ isPro: user?.isPro ?? false })) {
-      return <ProUpgradePrompt typeLabel={capitalize(type)} />;
+      redirect("/upgrade");
     }
   }
 

@@ -54,7 +54,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         >
           <ItemDrawerProvider collections={collections}>
             <CommandPaletteProvider items={searchItems} collections={searchCollections}>
-              <DashboardChrome sidebar={sidebar}>
+              <DashboardChrome sidebar={sidebar} showUpgrade={!(user?.isPro ?? false)}>
                 {isEmailVerificationEnabled() && user && !user.emailVerified && (
                   <VerifyEmailBanner />
                 )}

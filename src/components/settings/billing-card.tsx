@@ -6,15 +6,11 @@ import { createCheckoutSession, createPortalSession } from "@/actions/billing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import type { BillingInterval } from "@/lib/stripe";
+import { BillingIntervalToggle } from "@/components/pricing/billing-interval-toggle";
 import { FREE_COLLECTION_LIMIT, FREE_ITEM_LIMIT } from "@/lib/plan-limits";
+import { PRO_PLAN_PRICING } from "@/lib/pricing";
+import type { BillingInterval } from "@/lib/stripe";
 import { cn } from "@/lib/utils";
-
-const PRO_PRICING: Record<BillingInterval, { amount: string; period: string }> = {
-  monthly: { amount: "$8", period: "/month" },
-  yearly: { amount: "$72", period: "/year" },
-};
 
 interface BillingCardProps {
   isPro: boolean;
@@ -81,11 +77,7 @@ function ProPlanDetails({ hasBillingAccount }: { hasBillingAccount: boolean }) {
 function FreePlanDetails({ usage }: { usage: BillingCardProps["usage"] }) {
   const [interval, setBillingInterval] = useState<BillingInterval>("monthly");
   const [isPending, startTransition] = useTransition();
-  const yearly = interval === "yearly";
-  const pricing = PRO_PRICING[interval];
-
-  const periodLabelClass = (active: boolean) =>
-    cn("transition-colors", active ? "text-foreground" : "text-muted-foreground");
+  const pricing = PRO_PLAN_PRICING[interval];
 
   function handleUpgrade() {
     startTransition(async () => {
@@ -103,33 +95,12 @@ function FreePlanDetails({ usage }: { usage: BillingCardProps["usage"] }) {
         <UsageStat label="Collections" used={usage.collections} limit={FREE_COLLECTION_LIMIT} />
       </dl>
 
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <button
-          type="button"
-          className={periodLabelClass(!yearly)}
-          onClick={() => setBillingInterval("monthly")}
-          disabled={isPending}
-        >
-          Monthly
-        </button>
-        <Switch
-          checked={yearly}
-          onCheckedChange={(checked) => setBillingInterval(checked ? "yearly" : "monthly")}
-          disabled={isPending}
-          aria-label="Yearly billing"
-        />
-        <button
-          type="button"
-          className={periodLabelClass(yearly)}
-          onClick={() => setBillingInterval("yearly")}
-          disabled={isPending}
-        >
-          Yearly
-          <span className="ml-1.5 rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-green-500">
-            Save 25%
-          </span>
-        </button>
-      </div>
+      <BillingIntervalToggle
+        interval={interval}
+        onChange={setBillingInterval}
+        disabled={isPending}
+        className="flex-wrap"
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p>
