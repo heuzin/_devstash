@@ -1,12 +1,19 @@
 # Current Feature
 
-<!-- Feature name and short description -->
+Language Select Dropdown — replace the free-text Language input with a dropdown placed above the content editor, so picking a language immediately updates Monaco's syntax highlighting while typing.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
+
+- Replace the free-text Language `Input` with a `Select` dropdown of supported Monaco languages for snippet/command items
+- Place the Language field above the Content editor (it currently sits below)
+- Selecting a language immediately updates the `CodeEditor`'s syntax highlighting as you type
+- Apply to both the New Item dialog and the item drawer's edit mode via one shared component
+- Include a "Default" option that clears the language (falls back to `plaintext` for snippets, `shell` for commands)
+- Existing items with free-text languages (e.g. `ts`, `TypeScript`) are normalized to their Monaco id when editing; unknown values still show as an option instead of being dropped
 
 <!-- Bullet points of what success looks like -->
 

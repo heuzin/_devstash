@@ -18,10 +18,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { CollectionPicker } from "@/components/items/collection-picker";
 import { ItemContentField } from "@/components/items/drawer/item-content-field";
 import { FileUpload, type UploadedFile } from "@/components/items/file-upload";
+import { LanguageSelect } from "@/components/items/language-select";
 import { createItem } from "@/actions/items";
 import type { CollectionOption } from "@/lib/db/collections";
 import type { ItemTypeSummary } from "@/lib/db/items";
 import {
+  CODE_EDITOR_FALLBACK_LANGUAGE,
   CONTENT_TYPE_NAMES,
   CREATABLE_ITEM_TYPE_NAMES,
   LANGUAGE_TYPE_NAMES,
@@ -200,6 +202,18 @@ export function CreateItemDialog({
             </div>
           )}
 
+          {showLanguage && selectedType && (
+            <div className="space-y-1.5">
+              <Label htmlFor="new-item-language">Language</Label>
+              <LanguageSelect
+                id="new-item-language"
+                value={form.language}
+                onChange={(language) => setForm((f) => ({ ...f, language }))}
+                fallbackLanguage={CODE_EDITOR_FALLBACK_LANGUAGE[selectedType.name]}
+              />
+            </div>
+          )}
+
           {showContent && selectedType && (
             <div className="space-y-1.5">
               <Label htmlFor="new-item-content">Content</Label>
@@ -209,18 +223,6 @@ export function CreateItemDialog({
                 onChange={(content) => setForm((f) => ({ ...f, content }))}
                 language={form.language}
                 textareaId="new-item-content"
-              />
-            </div>
-          )}
-
-          {showLanguage && (
-            <div className="space-y-1.5">
-              <Label htmlFor="new-item-language">Language</Label>
-              <Input
-                id="new-item-language"
-                value={form.language}
-                onChange={(event) => setForm((f) => ({ ...f, language: event.target.value }))}
-                placeholder="e.g. typescript"
               />
             </div>
           )}

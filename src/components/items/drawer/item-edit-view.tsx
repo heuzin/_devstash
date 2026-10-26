@@ -11,11 +11,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { CollectionPicker } from "@/components/items/collection-picker";
 import { ItemContentField } from "@/components/items/drawer/item-content-field";
 import { ItemDetailsSection } from "@/components/items/drawer/item-details-section";
+import { LanguageSelect } from "@/components/items/language-select";
 import { updateItem } from "@/actions/items";
 import type { CollectionOption } from "@/lib/db/collections";
 import type { ItemDetail } from "@/lib/db/items";
 import { ITEM_TYPE_ICONS } from "@/lib/item-type-icons";
-import { CONTENT_TYPE_NAMES, LANGUAGE_TYPE_NAMES, URL_TYPE_NAMES } from "@/lib/item-types";
+import {
+  CODE_EDITOR_FALLBACK_LANGUAGE,
+  CONTENT_TYPE_NAMES,
+  LANGUAGE_TYPE_NAMES,
+  URL_TYPE_NAMES,
+} from "@/lib/item-types";
+import { resolveMonacoLanguage } from "@/lib/monaco-languages";
 import { parseTagsInput } from "@/lib/tags";
 import { capitalize } from "@/lib/utils";
 
@@ -37,7 +44,10 @@ export function ItemEditView({ item, collections, onCancel, onSaved }: ItemEditV
   const [title, setTitle] = useState(item.title);
   const [description, setDescription] = useState(item.description ?? "");
   const [content, setContent] = useState(item.content ?? "");
-  const [language, setLanguage] = useState(item.language ?? "");
+  // Normalize legacy free-text values (e.g. "ts") to the dropdown's Monaco ids.
+  const [language, setLanguage] = useState(() =>
+    item.language?.trim() ? resolveMonacoLanguage(item.language, "") : "",
+  );
   const [url, setUrl] = useState(item.url ?? "");
   const [tagsInput, setTagsInput] = useState(item.tags.join(", "));
   const [collectionIds, setCollectionIds] = useState(item.collections.map((c) => c.id));
@@ -109,6 +119,18 @@ export function ItemEditView({ item, collections, onCancel, onSaved }: ItemEditV
           />
         </section>
 
+        {showLanguage && (
+          <section className="space-y-1.5">
+            <Label htmlFor="item-language">Language</Label>
+            <LanguageSelect
+              id="item-language"
+              value={language}
+              onChange={setLanguage}
+              fallbackLanguage={CODE_EDITOR_FALLBACK_LANGUAGE[typeName]}
+            />
+          </section>
+        )}
+
         {showContent && (
           <section className="space-y-1.5">
             <Label htmlFor="item-content">Content</Label>
@@ -119,17 +141,6 @@ export function ItemEditView({ item, collections, onCancel, onSaved }: ItemEditV
               language={language}
               textareaId="item-content"
               rows={10}
-            />
-          </section>
-        )}
-
-        {showLanguage && (
-          <section className="space-y-1.5">
-            <Label htmlFor="item-language">Language</Label>
-            <Input
-              id="item-language"
-              value={language}
-              onChange={(event) => setLanguage(event.target.value)}
             />
           </section>
         )}
