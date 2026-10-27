@@ -12,6 +12,7 @@ import { CollectionPicker } from "@/components/items/collection-picker";
 import { ItemContentField } from "@/components/items/drawer/item-content-field";
 import { ItemDetailsSection } from "@/components/items/drawer/item-details-section";
 import { LanguageSelect } from "@/components/items/language-select";
+import { TagsField } from "@/components/items/tags-field";
 import { updateItem } from "@/actions/items";
 import type { CollectionOption } from "@/lib/db/collections";
 import type { ItemDetail } from "@/lib/db/items";
@@ -20,6 +21,7 @@ import {
   CODE_EDITOR_FALLBACK_LANGUAGE,
   CONTENT_TYPE_NAMES,
   LANGUAGE_TYPE_NAMES,
+  UPLOAD_TYPE_NAMES,
   URL_TYPE_NAMES,
 } from "@/lib/item-types";
 import { resolveMonacoLanguage } from "@/lib/monaco-languages";
@@ -29,11 +31,18 @@ import { capitalize } from "@/lib/utils";
 interface ItemEditViewProps {
   item: ItemDetail;
   collections: CollectionOption[];
+  canUseProFeatures: boolean;
   onCancel: () => void;
   onSaved: (item: ItemDetail) => void;
 }
 
-export function ItemEditView({ item, collections, onCancel, onSaved }: ItemEditViewProps) {
+export function ItemEditView({
+  item,
+  collections,
+  canUseProFeatures,
+  onCancel,
+  onSaved,
+}: ItemEditViewProps) {
   const router = useRouter();
   const Icon = ITEM_TYPE_ICONS[item.itemType.icon];
   const typeName = item.itemType.name;
@@ -157,15 +166,19 @@ export function ItemEditView({ item, collections, onCancel, onSaved }: ItemEditV
           </section>
         )}
 
-        <section className="space-y-1.5">
-          <Label htmlFor="item-tags">Tags</Label>
-          <Input
-            id="item-tags"
-            value={tagsInput}
-            onChange={(event) => setTagsInput(event.target.value)}
-            placeholder="Comma-separated"
-          />
-        </section>
+        <TagsField
+          id="item-tags"
+          value={tagsInput}
+          onChange={setTagsInput}
+          canSuggest={canUseProFeatures && !UPLOAD_TYPE_NAMES.has(typeName)}
+          getSuggestionInput={() => ({
+            itemTypeName: typeName,
+            title,
+            description: description || null,
+            content: showContent ? content || null : null,
+            url: showUrl ? url || null : null,
+          })}
+        />
 
         <CollectionPicker
           collections={collections}

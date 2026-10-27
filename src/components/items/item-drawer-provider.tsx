@@ -28,9 +28,11 @@ export function useItemDrawer() {
 
 export function ItemDrawerProvider({
   collections,
+  canUseProFeatures,
   children,
 }: {
   collections: CollectionOption[];
+  canUseProFeatures: boolean;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -75,6 +77,7 @@ export function ItemDrawerProvider({
         loading={loading}
         error={error}
         collections={collections}
+        canUseProFeatures={canUseProFeatures}
         onItemUpdated={setItem}
       />
     </ItemDrawerContext.Provider>

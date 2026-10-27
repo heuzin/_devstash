@@ -33,6 +33,7 @@ export const registerRateLimit = createLimiter(3, "1 h", "register");
 export const forgotPasswordRateLimit = createLimiter(3, "1 h", "forgot-password");
 export const resetPasswordRateLimit = createLimiter(5, "15 m", "reset-password");
 export const resendVerificationRateLimit = createLimiter(3, "15 m", "resend-verification");
+export const aiRateLimit = createLimiter(20, "1 h", "ai");
 
 /**
  * Checks a rate limit for the given identifier. Fails open (allows the request)

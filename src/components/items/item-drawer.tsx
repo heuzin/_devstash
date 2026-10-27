@@ -15,6 +15,7 @@ interface ItemDrawerProps {
   loading: boolean;
   error: string | null;
   collections: CollectionOption[];
+  canUseProFeatures: boolean;
   onItemUpdated: (item: ItemDetail) => void;
 }
 
@@ -25,6 +26,7 @@ export function ItemDrawer({
   loading,
   error,
   collections,
+  canUseProFeatures,
   onItemUpdated,
 }: ItemDrawerProps) {
   return (
@@ -39,6 +41,7 @@ export function ItemDrawer({
               key={item.id}
               item={item}
               collections={collections}
+              canUseProFeatures={canUseProFeatures}
               onItemUpdated={onItemUpdated}
               onItemDeleted={() => onOpenChange(false)}
             />
@@ -66,11 +69,13 @@ function ItemDrawerSkeleton() {
 function ItemDrawerBody({
   item,
   collections,
+  canUseProFeatures,
   onItemUpdated,
   onItemDeleted,
 }: {
   item: ItemDetail;
   collections: CollectionOption[];
+  canUseProFeatures: boolean;
   onItemUpdated: (item: ItemDetail) => void;
   onItemDeleted: () => void;
 }) {
@@ -81,6 +86,7 @@ function ItemDrawerBody({
       <ItemEditView
         item={item}
         collections={collections}
+        canUseProFeatures={canUseProFeatures}
         onCancel={() => setMode("view")}
         onSaved={(updated) => {
           onItemUpdated(updated);

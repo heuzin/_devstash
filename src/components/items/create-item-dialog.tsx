@@ -19,6 +19,7 @@ import { CollectionPicker } from "@/components/items/collection-picker";
 import { ItemContentField } from "@/components/items/drawer/item-content-field";
 import { FileUpload, type UploadedFile } from "@/components/items/file-upload";
 import { LanguageSelect } from "@/components/items/language-select";
+import { TagsField } from "@/components/items/tags-field";
 import { createItem } from "@/actions/items";
 import type { CollectionOption } from "@/lib/db/collections";
 import type { ItemTypeSummary } from "@/lib/db/items";
@@ -227,15 +228,20 @@ export function CreateItemDialog({
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="new-item-tags">Tags</Label>
-            <Input
-              id="new-item-tags"
-              value={form.tagsInput}
-              onChange={(event) => setForm((f) => ({ ...f, tagsInput: event.target.value }))}
-              placeholder="Comma-separated"
-            />
-          </div>
+          <TagsField
+            key={String(open)}
+            id="new-item-tags"
+            value={form.tagsInput}
+            onChange={(tagsInput) => setForm((f) => ({ ...f, tagsInput }))}
+            canSuggest={canUseProFeatures && Boolean(selectedType) && !showUpload}
+            getSuggestionInput={() => ({
+              itemTypeName: selectedType?.name ?? null,
+              title: form.title,
+              description: form.description || null,
+              content: showContent ? form.content || null : null,
+              url: showUrl ? form.url || null : null,
+            })}
+          />
 
           <CollectionPicker
             collections={collections}

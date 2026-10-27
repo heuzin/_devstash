@@ -1,18 +1,34 @@
-# Current Feature
+# Current Feature: AI Auto-Tagging
 
-<!-- Feature name and short description -->
+AI-powered tag suggestions for items using OpenAI `gpt-5-nano`. A "Suggest Tags" button in the tags area returns 3-5 freeform suggestions from the item's title and content, each with accept/reject controls. Pro-only (UI + server gating). As the first AI feature, it also establishes the OpenAI foundation (client, server action, rate limit config) for later AI features.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- OpenAI client utility with an `AI_MODEL` constant (`gpt-5-nano`), using the standard `openai` SDK, kept simple
+- `generateAutoTags` Server Action with auth, Pro gating, Zod validation, and rate limiting, returning `{ success, data, error }`
+- AI rate limit config (20 requests/hour per user) added to the existing `src/lib/rate-limit.ts`
+- "Suggest Tags" button (Sparkles icon, ghost variant) near the tags input in both the Create Item dialog and the item drawer's edit mode
+- Suggested tags shown as badges with per-tag accept (check) and reject (X) controls
+- Accepted tags are added to the item's tag list; tags are freeform (not limited to existing tags)
+- Content truncated to 2000 chars before the API call
+- Suggest Tags button hidden for free users (UI gating), with server-side enforcement too
+- Errors (Pro gating, rate limit, AI service) surfaced via toast
+- Follows existing patterns; unit tests for the Server Action
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- **Use the Responses API, not Chat Completions** — `gpt-5-nano` returns empty content via `chat.completions.create`. Use `client.responses.create({ model, instructions, input, text: { format: { type: "json_object" } } })` and read `response.output_text`.
+- Don't use `max_tokens` (unsupported); use `max_output_tokens` if a budget is needed.
+- Don't use `zodResponseFormat`/structured output — it burns excessive tokens and hits length limits with this model. Use `json_object` and parse manually. This overrides the plan's `responses.parse` + `zodTextFormat` approach.
+- The model may return `{"tags": [...]}` OR a bare `[...]` — handle both; always normalize tags to lowercase.
+- Spec says 3-5 tags (the plan said 3-6) — spec wins.
+- `OPENAI_API_KEY` is already in `.env` (and `.env.example`).
+- Pro gating should reuse the existing `canUsePro`/`assertCanUseProFeature` from `src/lib/usage-limits.ts` (respects `ENFORCE_PLAN_LIMITS`). `(app)/layout.tsx` already passes `canUseProFeatures` to `CreateItemDialog` via `CreateItemDialogProvider`; the drawer's edit view will need it threaded similarly.
+- Full architectural context: `docs/ai-integration-plan.md`. Spec: `context/features/ai-auto-tag-spec.md`.
 
 ## History
 

@@ -35,6 +35,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     getEditorPreferences(),
   ]);
 
+  const canUseProFeatures = canUsePro({ isPro: user?.isPro ?? false });
+
   const sidebar = (
     <Sidebar
       itemTypes={itemTypes}
@@ -50,9 +52,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <CreateItemDialogProvider
           itemTypes={itemTypes}
           collections={collections}
-          canUseProFeatures={canUsePro({ isPro: user?.isPro ?? false })}
+          canUseProFeatures={canUseProFeatures}
         >
-          <ItemDrawerProvider collections={collections}>
+          <ItemDrawerProvider collections={collections} canUseProFeatures={canUseProFeatures}>
             <CommandPaletteProvider items={searchItems} collections={searchCollections}>
               <DashboardChrome sidebar={sidebar} showUpgrade={!(user?.isPro ?? false)}>
                 {isEmailVerificationEnabled() && user && !user.emailVerified && (
