@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { CollectionPicker } from "@/components/items/collection-picker";
+import { DescriptionField } from "@/components/items/description-field";
 import { ItemContentField } from "@/components/items/drawer/item-content-field";
 import { ItemDetailsSection } from "@/components/items/drawer/item-details-section";
 import { LanguageSelect } from "@/components/items/language-select";
@@ -118,15 +118,21 @@ export function ItemEditView({
       </div>
 
       <div className="space-y-6 p-4">
-        <section className="space-y-1.5">
-          <Label htmlFor="item-description">Description</Label>
-          <Textarea
-            id="item-description"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            rows={2}
-          />
-        </section>
+        <DescriptionField
+          id="item-description"
+          value={description}
+          onChange={setDescription}
+          canGenerate={canUseProFeatures}
+          getGenerationInput={() => ({
+            itemTypeName: typeName,
+            title,
+            content: showContent ? content || null : null,
+            language: showLanguage ? language || null : null,
+            url: showUrl ? url || null : null,
+            fileName: item.fileName,
+            tags: parseTagsInput(tagsInput),
+          })}
+        />
 
         {showLanguage && (
           <section className="space-y-1.5">

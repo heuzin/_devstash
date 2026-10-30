@@ -14,8 +14,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { CollectionPicker } from "@/components/items/collection-picker";
+import { DescriptionField } from "@/components/items/description-field";
 import { ItemContentField } from "@/components/items/drawer/item-content-field";
 import { FileUpload, type UploadedFile } from "@/components/items/file-upload";
 import { LanguageSelect } from "@/components/items/language-select";
@@ -169,15 +169,21 @@ export function CreateItemDialog({
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="new-item-description">Description</Label>
-            <Textarea
-              id="new-item-description"
-              value={form.description}
-              onChange={(event) => setForm((f) => ({ ...f, description: event.target.value }))}
-              rows={2}
-            />
-          </div>
+          <DescriptionField
+            id="new-item-description"
+            value={form.description}
+            onChange={(description) => setForm((f) => ({ ...f, description }))}
+            canGenerate={canUseProFeatures && Boolean(selectedType)}
+            getGenerationInput={() => ({
+              itemTypeName: selectedType?.name ?? null,
+              title: form.title,
+              content: showContent ? form.content || null : null,
+              language: showLanguage ? form.language || null : null,
+              url: showUrl ? form.url || null : null,
+              fileName: showUpload ? uploadedFile?.fileName ?? null : null,
+              tags: parseTagsInput(form.tagsInput),
+            })}
+          />
 
           {showUrl && (
             <div className="space-y-1.5">

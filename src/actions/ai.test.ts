@@ -26,7 +26,7 @@ import { isAiConfigured, openai } from "@/lib/openai";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { assertCanUseProFeature } from "@/lib/usage-limits";
 import { AI_TAG_CONTENT_MAX_CHARS } from "@/lib/ai-tags";
-import { generateAutoTags } from "./ai";
+import { generateAutoTags, generateDescription } from "./ai";
 
 const authMock = vi.mocked(auth);
 const createMock = vi.mocked(openai.responses.create);
@@ -170,6 +170,112 @@ describe("generateAutoTags", () => {
     );
 
     const result = await generateAutoTags(VALID_INPUT);
+
+    expect(result).toEqual({
+      success: false,
+      error: "The AI service is unavailable right now. Please try again.",
+    });
+  });
+});
+
+describe("generateDescription", () => {
+  const DESCRIPTION_INPUT = {
+    itemTypeName: "snippet",
+    title: "useDebounce hook",
+    content: "export function useDebounce() {}",
+    language: "typescript",
+    url: null,
+    fileName: null,
+    tags: ["react"],
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    isAiConfiguredMock.mockReturnValue(true);
+    assertProMock.mockResolvedValue(undefined);
+    checkRateLimitMock.mockResolvedValue({ success: true, remaining: 19, reset: 0 });
+  });
+
+  it("rejects input without a title before calling auth or the AI", async () => {
+    const result = await generateDescription({ ...DESCRIPTION_INPUT, title: " " });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Add a title before generating a description",
+    });
+    expect(authMock).not.toHaveBeenCalled();
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects unauthenticated users", async () => {
+    mockSession(null);
+
+    const result = await generateDescription(DESCRIPTION_INPUT);
+
+    expect(result).toEqual({ success: false, error: "You must be signed in to do this" });
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the Pro gating error for free users", async () => {
+    mockSession(USER_ID);
+    assertProMock.mockRejectedValue(
+      new Error("AI features is a Pro feature. Upgrade in Settings to unlock it."),
+    );
+
+    const result = await generateDescription(DESCRIPTION_INPUT);
+
+    expect(assertProMock).toHaveBeenCalledWith(USER_ID, "AI features");
+    expect(result.error).toContain("Pro feature");
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("returns a rate limit error without calling the AI", async () => {
+    mockSession(USER_ID);
+    checkRateLimitMock.mockResolvedValue({ success: false, remaining: 0, reset: Date.now() });
+
+    const result = await generateDescription(DESCRIPTION_INPUT);
+
+    expect(result.success).toBe(false);
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("calls the Responses API with plain-text output and returns the normalized description", async () => {
+    mockSession(USER_ID);
+    mockResponse('  "A React hook that debounces a changing value."  ');
+
+    const result = await generateDescription({ ...DESCRIPTION_INPUT, fileName: "hook.ts" });
+
+    const params = createMock.mock.calls[0][0];
+    expect(params).toMatchObject({ model: "gpt-5-nano", reasoning: { effort: "minimal" } });
+    expect(params).not.toHaveProperty("text");
+    expect(params.input).toContain("<language>typescript</language>");
+    expect(params.input).toContain("<file-name>hook.ts</file-name>");
+    expect(result).toEqual({
+      success: true,
+      data: "A React hook that debounces a changing value.",
+    });
+  });
+
+  it("returns an error when the AI output is empty", async () => {
+    mockSession(USER_ID);
+    mockResponse("   ");
+
+    const result = await generateDescription(DESCRIPTION_INPUT);
+
+    expect(result).toEqual({
+      success: false,
+      error: "The AI couldn't write a description for this item.",
+    });
+  });
+
+  it("maps OpenAI API errors to a friendly message", async () => {
+    mockSession(USER_ID);
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    createMock.mockRejectedValue(
+      new OpenAI.APIError(500, undefined, "Internal error", new Headers()),
+    );
+
+    const result = await generateDescription(DESCRIPTION_INPUT);
 
     expect(result).toEqual({
       success: false,

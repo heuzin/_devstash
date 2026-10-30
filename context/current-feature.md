@@ -1,18 +1,31 @@
-# Current Feature
+# Current Feature: AI Description Generation
 
-<!-- Feature name and short description -->
+Click a Sparkles icon button next to the Description field to have AI write a concise 1–2 sentence description of the item from whatever is currently in the form.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- An icon button (Sparkles) next to the Description field generates a concise 1–2 sentence description/summary of the item
+- Available in both the New Item dialog (`CreateItemDialog`) and the item drawer's edit mode (`ItemEditView`)
+- Works without saving first: uses whatever is currently in the form (title, type, content, language, URL, file name, tags)
+- Works for all item types (snippet, prompt, command, note, link, file, image), using whatever info each type has
+- Clicking replaces the Description field's value with the generated text (the user can still edit or discard it before saving)
+- Pro-only, gated server-side via `assertCanUseProFeature(userId, "AI features")` (respects `ENFORCE_PLAN_LIMITS`); button hidden for non-Pro users
+- Spinner/disabled state while generating; errors surface via toast
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Mirror the AI Auto-Tagging feature: new `generateDescription` Server Action in `src/actions/ai.ts` reusing `assertAiAllowed`, `toAiErrorMessage`, the shared `aiRateLimit`, and the `{ success, data, error }` pattern
+- Zod input schema in `src/lib/validations/ai.ts` (title required, like `generateAutoTagsSchema`)
+- Pure prompt-building/parsing in a new `src/lib/ai-description.ts` (mirroring `src/lib/ai-tags.ts`): wrap the item in `<item>` tags treated as data, truncate content to 2000 chars, include the file name for file/image items; normalize output (trim, strip wrapping quotes, cap length)
+- Responses API with `AI_MODEL` (`gpt-5-nano`), `reasoning: { effort: "minimal" }`, a low `max_output_tokens`; plain text output (no JSON mode needed)
+- File/image items have no readable content, so their description is based on title, file name, tags, and type
+- `canUseProFeatures` is already threaded to both forms from `(app)/layout.tsx` (from the auto-tag work)
+- Tests: the action (validation, auth, Pro gating, unconfigured AI, rate limit, request params, error mapping) and the pure helper module
+- The OpenAI account previously had no credits (429 `insufficient_quota`), so end-to-end verification may be limited
 
 ## History
 
