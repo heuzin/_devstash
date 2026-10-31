@@ -99,6 +99,7 @@ function ItemDrawerBody({
   return (
     <ItemViewBody
       item={item}
+      canUseProFeatures={canUseProFeatures}
       onEdit={() => setMode("edit")}
       onUpdated={onItemUpdated}
       onDeleted={onItemDeleted}

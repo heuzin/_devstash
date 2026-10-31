@@ -23,3 +23,14 @@ export const generateDescriptionSchema = z.object({
 });
 
 export type GenerateDescriptionInput = z.infer<typeof generateDescriptionSchema>;
+
+export const explainCodeSchema = z.object({
+  itemTypeName: z.enum(["snippet", "command"], {
+    error: "Only snippets and commands can be explained",
+  }),
+  title: z.string().trim().min(1).max(200),
+  content: z.string().trim().min(1, "There's no code to explain"),
+  language: z.string().max(50).nullable().optional(),
+});
+
+export type ExplainCodeInput = z.infer<typeof explainCodeSchema>;

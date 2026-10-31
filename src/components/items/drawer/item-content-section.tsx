@@ -4,7 +4,12 @@ import type { ItemDetail } from "@/lib/db/items";
 import { CODE_EDITOR_FALLBACK_LANGUAGE, MARKDOWN_EDITOR_TYPE_NAMES } from "@/lib/item-types";
 import { formatFileSize } from "@/lib/upload-constraints";
 
-export function ItemContentSection({ item }: { item: ItemDetail }) {
+interface ItemContentSectionProps {
+  item: ItemDetail;
+  canUseProFeatures: boolean;
+}
+
+export function ItemContentSection({ item, canUseProFeatures }: ItemContentSectionProps) {
   if (item.contentType === "URL" && item.url) {
     return (
       <section className="space-y-1.5">
@@ -67,7 +72,13 @@ export function ItemContentSection({ item }: { item: ItemDetail }) {
     <section className="space-y-1.5">
       <h3 className="text-sm font-medium text-muted-foreground">Content</h3>
       {fallbackLanguage ? (
-        <CodeEditor value={item.content} language={item.language} fallbackLanguage={fallbackLanguage} readOnly />
+        <CodeEditor
+          value={item.content}
+          language={item.language}
+          fallbackLanguage={fallbackLanguage}
+          readOnly
+          explain={{ itemTypeName: item.itemType.name, title: item.title, canUseProFeatures }}
+        />
       ) : isMarkdown ? (
         <MarkdownEditor value={item.content} readOnly />
       ) : (

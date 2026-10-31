@@ -1,18 +1,31 @@
-# Current Feature
+# Current Feature: AI Explain Code
 
-<!-- Feature name and short description -->
+AI-powered, Pro-only code explanation for snippets and commands in the item drawer (OpenAI `gpt-5-nano`), shown inline via Code/Explain tabs in the code editor.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- `explainCode` Server Action with auth, Pro gating, Zod validation, and rate limiting (following the existing `src/actions/ai.ts` patterns)
+- "Explain" button (Sparkles icon) in the `CodeEditor` window-controls header, next to the Copy button
+- Shown only for snippet and command items in the item drawer's read view (not in create/edit forms)
+- After generating, Code/Explain tabs appear in the editor header to toggle between views
+- Explanation rendered as markdown in the same container space as the code editor
+- Concise explanation (~200–300 words) covering what the code does and key concepts
+- Loading state: `Loader2` spinner while generating
+- Free users see a Crown icon + tooltip ("AI features require Pro subscription") instead
+- Errors (Pro gating, rate limit, AI service) surfaced via toast
+- Unit tests for the server action
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Explanations are not saved to the database — regenerated on each click
+- Not available in create/edit forms, only the item drawer read view
+- `isPro` (`canUseProFeatures`) needs to be passed down to the item drawer / code editor
+- See `docs/ai-integration-plan.md` for full architectural context
+- Spec: `context/features/ai-explain-spec.md`
 
 ## History
 

@@ -11,12 +11,13 @@ import { capitalize } from "@/lib/utils";
 
 interface ItemViewBodyProps {
   item: ItemDetail;
+  canUseProFeatures: boolean;
   onEdit: () => void;
   onUpdated: (item: ItemDetail) => void;
   onDeleted: () => void;
 }
 
-export function ItemViewBody({ item, onEdit, onUpdated, onDeleted }: ItemViewBodyProps) {
+export function ItemViewBody({ item, canUseProFeatures, onEdit, onUpdated, onDeleted }: ItemViewBodyProps) {
   const Icon = ITEM_TYPE_ICONS[item.itemType.icon];
 
   return (
@@ -48,7 +49,7 @@ export function ItemViewBody({ item, onEdit, onUpdated, onDeleted }: ItemViewBod
           </section>
         )}
 
-        <ItemContentSection item={item} />
+        <ItemContentSection item={item} canUseProFeatures={canUseProFeatures} />
 
         {item.tags.length > 0 && (
           <section className="space-y-1.5">
