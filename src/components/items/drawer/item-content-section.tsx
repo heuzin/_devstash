@@ -1,15 +1,47 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { updateItem } from "@/actions/items";
 import { CodeEditor } from "@/components/items/code-editor";
 import { MarkdownEditor } from "@/components/items/markdown-editor";
 import type { ItemDetail } from "@/lib/db/items";
-import { CODE_EDITOR_FALLBACK_LANGUAGE, MARKDOWN_EDITOR_TYPE_NAMES } from "@/lib/item-types";
+import {
+  CODE_EDITOR_FALLBACK_LANGUAGE,
+  MARKDOWN_EDITOR_TYPE_NAMES,
+  PROMPT_TYPE_NAME,
+} from "@/lib/item-types";
 import { formatFileSize } from "@/lib/upload-constraints";
 
 interface ItemContentSectionProps {
   item: ItemDetail;
   canUseProFeatures: boolean;
+  onUpdated: (item: ItemDetail) => void;
 }
 
-export function ItemContentSection({ item, canUseProFeatures }: ItemContentSectionProps) {
+export function ItemContentSection({ item, canUseProFeatures, onUpdated }: ItemContentSectionProps) {
+  const router = useRouter();
+
+  async function saveOptimizedPrompt(content: string): Promise<boolean> {
+    const result = await updateItem(item.id, {
+      title: item.title,
+      description: item.description,
+      content,
+      language: item.language,
+      url: item.url,
+      tags: item.tags,
+      collectionIds: item.collections.map((collection) => collection.id),
+    });
+    if (!result.success || !result.data) {
+      toast.error(result.error ?? "Failed to save the optimized prompt");
+      return false;
+    }
+    toast.success("Optimized prompt saved");
+    onUpdated(result.data);
+    router.refresh();
+    return true;
+  }
+
   if (item.contentType === "URL" && item.url) {
     return (
       <section className="space-y-1.5">
@@ -80,7 +112,15 @@ export function ItemContentSection({ item, canUseProFeatures }: ItemContentSecti
           explain={{ itemTypeName: item.itemType.name, title: item.title, canUseProFeatures }}
         />
       ) : isMarkdown ? (
-        <MarkdownEditor value={item.content} readOnly />
+        <MarkdownEditor
+          value={item.content}
+          readOnly
+          optimize={
+            item.itemType.name === PROMPT_TYPE_NAME
+              ? { title: item.title, canUseProFeatures, onAccept: saveOptimizedPrompt }
+              : undefined
+          }
+        />
       ) : (
         <pre className="max-h-80 overflow-auto rounded-lg border border-border bg-muted/30 p-3 font-mono text-xs whitespace-pre-wrap">
           {item.content}

@@ -49,7 +49,7 @@ export function ItemViewBody({ item, canUseProFeatures, onEdit, onUpdated, onDel
           </section>
         )}
 
-        <ItemContentSection item={item} canUseProFeatures={canUseProFeatures} />
+        <ItemContentSection item={item} canUseProFeatures={canUseProFeatures} onUpdated={onUpdated} />
 
         {item.tags.length > 0 && (
           <section className="space-y-1.5">

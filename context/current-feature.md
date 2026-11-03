@@ -1,14 +1,31 @@
-# Current Feature
+# Current Feature: AI Prompt Optimizer
 
-<!-- Feature name and short description -->
+Pro-only "Optimize" button for prompt items that asks AI to refine the current prompt, shows the result, and lets the user choose whether to use it.
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- An "Optimize" button appears in the `MarkdownEditor` header for **prompt** items in the item drawer's read view, next to Copy — mirroring the "Explain" button in the `CodeEditor` header for snippets/commands
+- Clicking it sends the current prompt to OpenAI, which refines it for clarity, structure, and effectiveness — or returns it essentially unchanged if it's already good
+- The optimized prompt is shown in the editor's space (Original/Optimized tabs, Markdown-rendered), with **Use optimized** and **Discard** actions asking the user whether to adopt it
+- **Use optimized** saves the new content to the item (toast + `router.refresh()`, drawer updates in place via the existing `onUpdated` path); **Discard** returns to the original with nothing saved
+- If the AI reports no meaningful changes were needed, the user is told so (toast/note) instead of being offered an identical prompt
+- Pro-gated: free users see a Crown icon with the "AI features require Pro subscription" tooltip, matching `ExplainCodeButton`
+- Pending state (spinner, "Optimizing...") and errors surface via toast
+
+## Notes
+
+- Reuse the AI-feature pattern from Explain Code / Describe: new `optimizePrompt` Server Action in `src/actions/ai.ts` using `assertAiAllowed` (auth, `assertCanUseProFeature(userId, "AI features")` respecting `ENFORCE_PLAN_LIMITS`, AI configured, shared 20/hr `aiRateLimit`) and `toAiErrorMessage`; Zod schema `optimizePromptSchema` in `src/lib/validations/ai.ts` (title + non-empty content)
+- Responses API with `AI_MODEL`, `reasoning: { effort: "minimal" }`; return structured output (e.g. `json_object` with `{ optimized, changed, summary? }`) so "no change needed" can be detected — remember `json_object` mode requires the word "JSON" in the input
+- Pure prompt-building/parsing helpers in a new `src/lib/ai-prompt-optimizer.ts` (`OPTIMIZE_INSTRUCTIONS`, `buildOptimizeInput` wrapping the prompt in `<item>` tags treated as data with truncation, `parseOptimizedPrompt`), plus a matching test file
+- Saving: reuse the existing ownership-checked `updateItem` path (or a narrow content-only update action if passing the full item is awkward) — must stay server-side auth/ownership checked
+- `MarkdownEditor` gets an optional `optimize` prop (like `CodeEditor`'s `explain`), passed only from the drawer's `ItemContentSection` for `prompt` items; notes are unaffected. Consider a shared button component with `ExplainCodeButton` rather than duplicating its Pro/tooltip logic
+- Optimized result is not persisted until accepted and resets when switching items or entering edit mode
+- Not in create/edit forms (read view only), matching Explain
+- Tests: action (validation, auth, Pro gating, rate limit, API params, no-change path, error mapping) and the pure helpers
 
 ## Notes
 

@@ -9,6 +9,12 @@ import {
   parseDescription,
 } from "@/lib/ai-description";
 import { EXPLAIN_INSTRUCTIONS, buildExplainInput, parseExplanation } from "@/lib/ai-explain";
+import {
+  OPTIMIZE_INSTRUCTIONS,
+  buildOptimizeInput,
+  parseOptimizedPrompt,
+  type OptimizedPrompt,
+} from "@/lib/ai-prompt-optimizer";
 import { AI_MODEL, isAiConfigured, openai } from "@/lib/openai";
 import { aiRateLimit, checkRateLimit, retryAfterSeconds } from "@/lib/rate-limit";
 import { assertCanUseProFeature } from "@/lib/usage-limits";
@@ -16,6 +22,7 @@ import {
   explainCodeSchema,
   generateAutoTagsSchema,
   generateDescriptionSchema,
+  optimizePromptSchema,
 } from "@/lib/validations/ai";
 
 interface AiActionResult<T> {
@@ -139,6 +146,38 @@ export async function explainCode(input: unknown): Promise<AiActionResult<string
     if (!explanation) throw new AiError("The AI couldn't explain this code.");
 
     return { success: true, data: explanation };
+  } catch (error) {
+    return { success: false, error: toAiErrorMessage(error) };
+  }
+}
+
+export async function optimizePrompt(input: unknown): Promise<AiActionResult<OptimizedPrompt>> {
+  const parsed = optimizePromptSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You must be signed in to do this" };
+  }
+
+  try {
+    await assertAiAllowed(session.user.id);
+
+    const response = await openai.responses.create({
+      model: AI_MODEL,
+      instructions: OPTIMIZE_INSTRUCTIONS,
+      input: buildOptimizeInput(parsed.data),
+      reasoning: { effort: "minimal" },
+      max_output_tokens: 3000,
+      text: { format: { type: "json_object" } },
+    });
+
+    const result = parseOptimizedPrompt(response.output_text, parsed.data.content);
+    if (!result) throw new AiError("The AI couldn't optimize this prompt.");
+
+    return { success: true, data: result };
   } catch (error) {
     return { success: false, error: toAiErrorMessage(error) };
   }

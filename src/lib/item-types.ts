@@ -36,3 +36,6 @@ export const IMAGE_TYPE_NAME = "image";
 
 // The type whose items render as a single-column FileList instead of ItemGrid.
 export const FILE_TYPE_NAME = "file";
+
+// The type whose items get the AI "Optimize" action in the drawer's MarkdownEditor.
+export const PROMPT_TYPE_NAME = "prompt";

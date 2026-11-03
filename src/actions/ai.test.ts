@@ -27,7 +27,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { assertCanUseProFeature } from "@/lib/usage-limits";
 import { AI_TAG_CONTENT_MAX_CHARS } from "@/lib/ai-tags";
 import { AI_EXPLAIN_CONTENT_MAX_CHARS } from "@/lib/ai-explain";
-import { explainCode, generateAutoTags, generateDescription } from "./ai";
+import { AI_OPTIMIZE_CONTENT_MAX_CHARS } from "@/lib/ai-prompt-optimizer";
+import { explainCode, generateAutoTags, generateDescription, optimizePrompt } from "./ai";
 
 const authMock = vi.mocked(auth);
 const createMock = vi.mocked(openai.responses.create);
@@ -397,6 +398,128 @@ describe("explainCode", () => {
     );
 
     const result = await explainCode(EXPLAIN_INPUT);
+
+    expect(result).toEqual({
+      success: false,
+      error: "The AI service is unavailable right now. Please try again.",
+    });
+  });
+});
+
+describe("optimizePrompt", () => {
+  const OPTIMIZE_INPUT = {
+    itemTypeName: "prompt",
+    title: "Code review",
+    content: "Review my code",
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    isAiConfiguredMock.mockReturnValue(true);
+    assertProMock.mockResolvedValue(undefined);
+    checkRateLimitMock.mockResolvedValue({ success: true, remaining: 19, reset: 0 });
+  });
+
+  it("rejects non-prompt item types before calling auth or the AI", async () => {
+    const result = await optimizePrompt({ ...OPTIMIZE_INPUT, itemTypeName: "note" });
+
+    expect(result).toEqual({ success: false, error: "Only prompts can be optimized" });
+    expect(authMock).not.toHaveBeenCalled();
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects empty content", async () => {
+    const result = await optimizePrompt({ ...OPTIMIZE_INPUT, content: "   " });
+
+    expect(result).toEqual({ success: false, error: "There's no prompt to optimize" });
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects unauthenticated users", async () => {
+    mockSession(null);
+
+    const result = await optimizePrompt(OPTIMIZE_INPUT);
+
+    expect(result).toEqual({ success: false, error: "You must be signed in to do this" });
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the Pro gating error for free users", async () => {
+    mockSession(USER_ID);
+    assertProMock.mockRejectedValue(
+      new Error("AI features is a Pro feature. Upgrade in Settings to unlock it."),
+    );
+
+    const result = await optimizePrompt(OPTIMIZE_INPUT);
+
+    expect(assertProMock).toHaveBeenCalledWith(USER_ID, "AI features");
+    expect(result.error).toContain("Pro feature");
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("returns a rate limit error without calling the AI", async () => {
+    mockSession(USER_ID);
+    checkRateLimitMock.mockResolvedValue({ success: false, remaining: 0, reset: Date.now() });
+
+    const result = await optimizePrompt(OPTIMIZE_INPUT);
+
+    expect(checkRateLimitMock).toHaveBeenCalledWith(null, USER_ID);
+    expect(result.error).toBe("AI limit reached. Please try again in 10 minutes.");
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("calls the Responses API in JSON mode with truncated content and returns the suggestion", async () => {
+    mockSession(USER_ID);
+    mockResponse(
+      JSON.stringify({ optimized: "Review the code below.", changed: true, summary: "Clearer task." }),
+    );
+    const longContent = "x".repeat(AI_OPTIMIZE_CONTENT_MAX_CHARS + 100);
+
+    const result = await optimizePrompt({ ...OPTIMIZE_INPUT, content: longContent });
+
+    const params = createMock.mock.calls[0][0];
+    expect(params).toMatchObject({
+      model: "gpt-5-nano",
+      reasoning: { effort: "minimal" },
+      text: { format: { type: "json_object" } },
+    });
+    expect(params.input).toContain("JSON");
+    expect(params.input).not.toContain("x".repeat(AI_OPTIMIZE_CONTENT_MAX_CHARS + 1));
+    expect(result).toEqual({
+      success: true,
+      data: { optimized: "Review the code below.", changed: true, summary: "Clearer task." },
+    });
+  });
+
+  it("returns changed: false when the prompt needs no changes", async () => {
+    mockSession(USER_ID);
+    mockResponse(JSON.stringify({ optimized: "Review my code", changed: false }));
+
+    const result = await optimizePrompt(OPTIMIZE_INPUT);
+
+    expect(result).toEqual({
+      success: true,
+      data: { optimized: "Review my code", changed: false, summary: null },
+    });
+  });
+
+  it("returns an error when the AI output is unparseable", async () => {
+    mockSession(USER_ID);
+    mockResponse("not json");
+
+    const result = await optimizePrompt(OPTIMIZE_INPUT);
+
+    expect(result).toEqual({ success: false, error: "The AI couldn't optimize this prompt." });
+  });
+
+  it("maps OpenAI API errors to a friendly message", async () => {
+    mockSession(USER_ID);
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    createMock.mockRejectedValue(
+      new OpenAI.APIError(500, undefined, "Internal error", new Headers()),
+    );
+
+    const result = await optimizePrompt(OPTIMIZE_INPUT);
 
     expect(result).toEqual({
       success: false,

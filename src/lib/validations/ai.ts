@@ -34,3 +34,11 @@ export const explainCodeSchema = z.object({
 });
 
 export type ExplainCodeInput = z.infer<typeof explainCodeSchema>;
+
+export const optimizePromptSchema = z.object({
+  itemTypeName: z.literal("prompt", { error: "Only prompts can be optimized" }),
+  title: z.string().trim().min(1).max(200),
+  content: z.string().trim().min(1, "There's no prompt to optimize"),
+});
+
+export type OptimizePromptInput = z.infer<typeof optimizePromptSchema>;
